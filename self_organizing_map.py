@@ -2,6 +2,7 @@ import numpy as np
 from scipy.ndimage.filters import gaussian_filter
 
 
+# TODO: add docstring
 class SOM:
     def __init__(self, map_dim, metrics=None, learning_rate=0.5, update_mask_dim=(5, 5), sigma=1.0, decay=0.99):
         """
@@ -13,7 +14,7 @@ class SOM:
         :param decay: learning rate decay factor
         """
         self.map = np.empty(shape=map_dim, dtype=np.float32)
-        self.activations = np.empty(shape=(map_dim[0], map_dim[1]), dtype=np.float32)
+        self.map_dim = { 'w':  map_dim[0], 'h':  map_dim[1], 'depth':  map_dim[2] }
 
         self.learning_rate = learning_rate
         self.decay = decay
@@ -29,20 +30,21 @@ class SOM:
     def rand_init_from_data(self, data, seed=None):
         """ initializes the map of the SOM picking random samples from data """
         random_generator = np.random.RandomState(seed)
-        it = np.nditer(self.activations, flags=['multi_index'])
-        while not it.finished:
-            self.map[it.multi_index] = data[int(random_generator.rand()*(len(data) - 1))]
-            self.map[it.multi_index] = self.map[it.multi_index] / (np.linalg.norm(self.map[it.multi_index]))
-            it.iternext()
+        for idx in np.ndindex(self.map_dim["w"], self.map_dim["h"]):
+            self.map[idx] = data[int(random_generator.rand()*(len(data) - 1))]
+            self.map[idx] = self.map[idx] / (np.linalg.norm(self.map[idx]))
 
     def activate(self, X):
         """
         :param X: a sample from the data (length = map_dim[2])
         """
-        it = np.nditer(self.activations, flags=['multi_index'])
+        activations = np.empty(shape=(self.map_dim["w"], self.map_dim["h"]), dtype=np.float32)
+        it = np.nditer(activations, flags=['multi_index'])
         while not it.finished:
-            self.activations[it.multi_index] = self.metrics(X, self.map[it.multi_index[0], it.multi_index[1]])
+            activations[it.multi_index] = self.metrics(X, self.map[it.multi_index[0], it.multi_index[1]])
             it.iternext()
+
+        return activations
 
     def train(self, data, epochs=5, seed=None):
         """
@@ -56,8 +58,7 @@ class SOM:
                 lr = lr*self.decay
 
                 x = data[idx]
-                self.activate(x)
-                winner = np.unravel_index(self.activations.argmin(), self.activations.shape)
+                winner = self.min_activation_idx(x)
 
                 dx = int((self.update_mask.shape[0]-1)/2)
                 dy = int((self.update_mask.shape[1]-1)/2)
@@ -71,3 +72,14 @@ class SOM:
                     it.iternext()
             print( "   --> epoch {} (of {}) finished".format(epoch+1, epochs) )
         print("end training\n")
+
+    def min_activation_idx(self, data):
+        activations = self.activate(data)
+        return np.unravel_index(activations.argmin(), activations.shape)
+
+    def heat_map(self, dataset):
+        heat_map = np.zeros(shape=(self.map_dim["w"], self.map_dim["h"]))
+        for data in dataset:
+            winner = self.min_activation_idx(data)
+            heat_map[winner] += 1
+        return heat_map
