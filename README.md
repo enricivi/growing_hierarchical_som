@@ -6,3 +6,4 @@
 | [NumPy](http://www.numpy.org/)                                 | 1.13.3  |
 | [SciPy](https://www.scipy.org/)                                | 1.0.0   |
 | [scikit-learn](http://scikit-learn.org/stable/)                | 0.19.1  |
+| [matplotlib](https://matplotlib.org/)                          | 2.1.2   |
