@@ -32,7 +32,7 @@ class SOM:
         random_generator = np.random.RandomState(seed)
         for idx in np.ndindex(self.map_dim["w"], self.map_dim["h"]):
             self.map[idx] = data[int(random_generator.rand()*(len(data) - 1))]
-            self.map[idx] = self.map[idx] / (np.linalg.norm(self.map[idx]))
+            self.map[idx] /= np.linalg.norm(self.map[idx])
 
     def activate(self, X):
         """
@@ -43,7 +43,6 @@ class SOM:
         while not it.finished:
             activations[it.multi_index] = self.metrics(X, self.map[it.multi_index[0], it.multi_index[1]])
             it.iternext()
-
         return activations
 
     def train(self, data, epochs=5, seed=None):
