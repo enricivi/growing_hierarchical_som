@@ -7,20 +7,54 @@ class GSOM:
         self.__t2 = t2
         self.__parent_quantization_error = parent_quantization_error
         self.__map_size = initial_map_size
+
         # i'm not so sure...
-        self.neurons_map = np.asarray([[None for _ in range(initial_map_size[0])] for _ in range(initial_map_size[1])])
+        self.neurons_map = np.asarray(
+            a=[[None for _ in range(initial_map_size[0])] for _ in range(initial_map_size[1])],
+            dtype=object
+        )
         if weights_vectors_dict is not None:
             for position, weight in weights_vectors_dict.items():
                 self.neurons_map[position] = Neuron(weight, self.__parent_quantization_error, self.__t2, growing_metric)
 
-    def winner_idx(self):
+    def winner_idx(self, data):
+        activations = np.empty(shape=self.neurons_map.shape, dtype=np.float32)
+
+        activations_iter = np.nditer(activations, flags=['multi_index'])
+        while not activations_iter.finished:
+            activations[activations_iter.multi_index] = self.neurons_map[activations_iter.multi_index](data)
+            activations_iter.iternext()
+
+        return np.unravel_index(activations.min(), dims=activations.shape)
+
+    def train(self, input_dataset, epochs, learning_rate, decay, gaussian_sigma):
         raise NotImplementedError
 
-    def train(self, input_dataset, epochs, learning_rate, decay, gaussian_sigma, t2):
-        raise NotImplementedError
+    def __can_grow(self, input_dataset):
+        MQE = 0.0
+        mapped_neurons = 0
 
-    def can_grow(self):
-        pass
+        self.__map_data_to_unit(input_dataset)
+        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
+        while not neuron_iter.finished:
+            neuron = self.neurons_map[neuron_iter.multi_index]
+            if len(neuron.input_dataset) != 0:
+                MQE += neuron.compute_quantization_error()
+                mapped_neurons += 1
+            neuron_iter.iternext()
+
+        return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
+
+    def __map_data_to_unit(self, input_dataset):
+        # reset previous mapping
+        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
+        while not neuron_iter.finished:
+            self.neurons_map[neuron_iter.multi_index].input_dataset.clear()
+            neuron_iter.iternext()
+        # finding the new association for each neuron
+        for data in input_dataset:
+            winner = self.winner_idx(data)
+            self.neurons_map[winner].input_dataset.append(data)
 
     def find_error_unit(self):
         raise NotImplementedError

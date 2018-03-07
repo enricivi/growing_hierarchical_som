@@ -41,6 +41,7 @@ def print_full_map(_som):
 
 digits = load_digits()
 
+
 data = digits.data
 n_samples, n_features = data.shape
 n_digits = len(np.unique(digits.target))
