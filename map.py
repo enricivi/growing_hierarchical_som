@@ -11,7 +11,7 @@ class Map:
     def winner_idx(self):
         raise NotImplementedError
 
-    def train(self, input_dataset, epochs, learning_rate, decay):
+    def train(self, input_dataset, epochs, learning_rate, decay, gaussian_sigma, t2):
         raise NotImplementedError
 
     def can_grow(self):

@@ -1,11 +1,12 @@
 class Unit:
-    def __init__(self, weight_vector, input_dataset, zero_quantization_error, t2):
+    def __init__(self, weight_vector, input_dataset, zero_quantization_error, t2, growing_metric):
         """
         :type t2: The tau_2 parameter
         :type zero_quantization_error: The quantization error of the layer 0
         :type input_dataset: List of the inputs that map in this unit (maybe)
         :type weight_vector: the initial weight vector for the unit - m_i
         """
+        self.__growing_metric = growing_metric
         self.__t2 = t2
         self.__zero_quantization_error = zero_quantization_error
         self.__input_dataset = input_dataset
