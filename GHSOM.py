@@ -21,12 +21,12 @@ class GHSOM:
     def __call__(self, *args, **kwargs):
         zero_unit = Unit(
             self.__calc_input_mean(),
-            self.__input_dataset,
             None,
             None,
             self.__growing_metric
         )
 
+        zero_unit.input_dataset = self.__input_dataset
         self.__zero_quantization_error = zero_unit.calc_quantization_error()
 
         zero_unit.child_map = Map(
