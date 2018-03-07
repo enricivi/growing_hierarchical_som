@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Unit:
+class Neuron:
     def __init__(self, weight_vector, zero_quantization_error, t2, growing_metric):
         """
         :type t2: The tau_2 parameter
@@ -17,9 +17,11 @@ class Unit:
         self.input_dataset = None
 
     def needs_child_map(self):
-        # global stopping criterion
-        raise NotImplementedError
-        return False
+        needs_maps = True
+        if self.calc_quantization_error() < (self.__t2*self.__zero_quantization_error):
+            needs_maps = False
+
+        return needs_maps
 
     def calc_quantization_error(self):
         assert self.input_dataset is not None, "The unit has not been provided with an input dataset"
@@ -31,8 +33,4 @@ class Unit:
         return quantization_error
 
     def distance_from_other_unit(self, unit):
-        # 2-norm
-        raise NotImplementedError
-
-    def __distance_from_input_data_item(self, data_item):
-        return np.linalg.norm((self.__weight_vector - data_item))
+        return np.linalg.norm(self.__weight_vector - unit.__weight_vector)

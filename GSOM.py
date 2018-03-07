@@ -1,4 +1,4 @@
-class Map:
+class GSOM:
     def __init__(self, initial_map_size, parent_quantization_error, t1, weight_vectors_dict=None):
         self.__t1 = t1
         self.__parent_quantization_error = parent_quantization_error
