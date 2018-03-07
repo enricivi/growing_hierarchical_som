@@ -1,11 +1,11 @@
 import numpy as np
 
+
 class Unit:
     def __init__(self, weight_vector, zero_quantization_error, t2, growing_metric):
         """
         :type t2: The tau_2 parameter
         :type zero_quantization_error: The quantization error of the layer 0
-        :type input_dataset: List of the inputs that map in this unit (maybe)
         :type weight_vector: the initial weight vector for the unit - m_i
         """
         self.__growing_metric = growing_metric
@@ -29,7 +29,6 @@ class Unit:
             quantization_error /= len(self.input_dataset)
 
         return quantization_error
-
 
     def distance_from_other_unit(self, unit):
         # 2-norm
