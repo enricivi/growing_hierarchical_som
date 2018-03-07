@@ -1,5 +1,5 @@
 from unit import Unit
-from map import Map
+from som import Map
 import numpy as np
 
 
