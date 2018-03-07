@@ -1,12 +1,17 @@
+from neuron import Neuron
+import numpy as np
+
 class GSOM:
-    def __init__(self, initial_map_size, parent_quantization_error, t1, weight_vectors_dict=None):
+    def __init__(self, initial_map_size, parent_quantization_error, t1, t2, growing_metric, weights_vectors_dict=None):
         self.__t1 = t1
+        self.__t2 = t2
         self.__parent_quantization_error = parent_quantization_error
         self.__map_size = initial_map_size
-
-        if weight_vectors_dict is not None:
-            # init weight vectors
-            raise NotImplementedError
+        # i'm not so sure...
+        self.neurons_map = np.asarray([[None for _ in range(initial_map_size[0])] for _ in range(initial_map_size[1])])
+        if weights_vectors_dict is not None:
+            for position, weight in weights_vectors_dict.items():
+                self.neurons_map[position] = Neuron(weight, self.__parent_quantization_error, self.__t2, growing_metric)
 
     def winner_idx(self):
         raise NotImplementedError
@@ -15,8 +20,7 @@ class GSOM:
         raise NotImplementedError
 
     def can_grow(self):
-        # MQE
-        raise NotImplementedError
+        pass
 
     def find_error_unit(self):
         raise NotImplementedError

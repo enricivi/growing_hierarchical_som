@@ -33,6 +33,8 @@ class GHSOM:
             (2, 2),
             self.__zero_quantization_error,
             self.__t1,
+            self.__t2,
+            self.__growing_metric,
             self.__calc_initial_random_weights()
         )
 
@@ -41,8 +43,7 @@ class GHSOM:
             self.__epoch_number,
             self.__learning_rate,
             self.__decay,
-            self.__gaussian_sigma,
-            self.__t2
+            self.__gaussian_sigma
         )
 
     def __calc_input_mean(self):
