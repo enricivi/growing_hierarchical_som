@@ -17,11 +17,12 @@ class Neuron:
         self.input_dataset = list()
 
     def __call__(self, data):
+        # activation function
         return np.linalg.norm(data - self.__weight_vector)
 
     def needs_child_map(self):
         needs_maps = True
-        if self.compute_quantization_error() < (self.__t2*self.__zero_quantization_error):
+        if self.compute_quantization_error() < (self.__t2 * self.__zero_quantization_error):
             needs_maps = False
 
         return needs_maps
@@ -29,7 +30,7 @@ class Neuron:
     def compute_quantization_error(self):
         assert len(self.input_dataset) != 0, "The unit has not been provided with an input dataset"
         input_dataset = np.asarray(self.input_dataset)
-        distance_from_whole_dataset = np.linalg.norm(input_dataset - self.__weight_vector, axis=0)
+        distance_from_whole_dataset = np.linalg.norm(self(input_dataset), axis=1)
         quantization_error = distance_from_whole_dataset.sum()
         if self.__growing_metric is "mqe":
             quantization_error /= len(input_dataset)

@@ -1,12 +1,14 @@
 from neuron import Neuron
 import numpy as np
 
+
 class GSOM:
     def __init__(self, initial_map_size, parent_quantization_error, t1, t2, growing_metric, weights_vectors_dict=None):
         self.__t1 = t1
         self.__t2 = t2
         self.__parent_quantization_error = parent_quantization_error
         self.__map_size = initial_map_size
+        self.__growing_metric = growing_metric
 
         # i'm not so sure...
         self.neurons_map = np.asarray(
@@ -34,7 +36,7 @@ class GSOM:
         MQE = 0.0
         mapped_neurons = 0
 
-        self.__map_data_to_unit(input_dataset)
+        self.__map_data_to_neurons(input_dataset)
         neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
         while not neuron_iter.finished:
             neuron = self.neurons_map[neuron_iter.multi_index]
@@ -45,7 +47,7 @@ class GSOM:
 
         return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
 
-    def __map_data_to_unit(self, input_dataset):
+    def __map_data_to_neurons(self, input_dataset):
         # reset previous mapping
         neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
         while not neuron_iter.finished:
@@ -56,11 +58,31 @@ class GSOM:
             winner = self.winner_idx(data)
             self.neurons_map[winner].input_dataset.append(data)
 
-    def find_error_unit(self):
-        raise NotImplementedError
+    def __find_error_neuron(self, input_dataset):
+        self.__map_data_to_neurons(input_dataset)
 
-    def find_most_dissimilar_unit(self, error_unit):
-        raise NotImplementedError
+        quantization_errors_map = np.zeros(shape=self.neurons_map.shape, dtype=np.float32)
+        qem_iter = np.nditer(quantization_errors_map, flags=['multi_index'])
+        while not qem_iter.finished:
+            neuron = self.neurons_map[qem_iter.multi_index]
+            if len(neuron.input_dataset) != 0:
+                quantization_errors_map[qem_iter.multi_index] += neuron.compute_quantization_error()
+            qem_iter.iternext()
+
+        return np.unravel_index(quantization_errors_map.max(), dims=quantization_errors_map.shape)
+
+    def find_most_dissimilar_unit(self, error_unit_position):
+        weight_distances_map = np.zeros(shape=self.neurons_map.shape, dtype=np.float32)
+
+        error_neuron = self.neurons_map[error_unit_position]
+        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
+        while not neuron_iter.finished:
+            if np.linalg.norm(error_unit_position - neuron_iter.multi_index, ord=1) == 1:
+                neighbour = self.neurons_map[neuron_iter.multi_index]
+                weight_distances_map[neuron_iter.multi_index] = error_neuron.weight_distance_from_other_unit(neighbour)
+            neuron_iter.iternext()
+
+        return np.unravel_index(weight_distances_map.max(), dims=weight_distances_map.shape)
 
     def grow(self):
         raise NotImplementedError
