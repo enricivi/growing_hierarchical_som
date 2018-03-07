@@ -1,7 +1,7 @@
 from unit import Unit
 from som import Map
 import numpy as np
-
+#test
 
 class GHSOM:
     def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, epoch_number=5,
