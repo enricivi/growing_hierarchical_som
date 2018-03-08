@@ -16,7 +16,7 @@ class Neuron:
         self.child_map = None
         self.input_dataset = list()
 
-    def __call__(self, data):
+    def activation(self, data):
         # activation function
         return np.linalg.norm(data - self.__weight_vector)
 
@@ -30,7 +30,7 @@ class Neuron:
     def compute_quantization_error(self):
         assert len(self.input_dataset) != 0, "The unit has not been provided with an input dataset"
         input_dataset = np.asarray(self.input_dataset)
-        distance_from_whole_dataset = np.linalg.norm(self(input_dataset), axis=1)
+        distance_from_whole_dataset = np.linalg.norm(self.activation(input_dataset), axis=1)
         quantization_error = distance_from_whole_dataset.sum()
         if self.__growing_metric is "mqe":
             quantization_error /= len(input_dataset)
