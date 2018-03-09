@@ -24,13 +24,50 @@ class GSOM:
 
         activations_iter = np.nditer(activations, flags=['multi_index'])
         while not activations_iter.finished:
-            activations[activations_iter.multi_index] = self.neurons_map[activations_iter.multi_index](data)
+            activations[activations_iter.multi_index] = self.neurons_map[activations_iter.multi_index].activation(data)
             activations_iter.iternext()
 
         return np.unravel_index(activations.min(), dims=activations.shape)
 
     def train(self, input_dataset, epochs, learning_rate, decay, gaussian_sigma):
-        raise NotImplementedError
+        lr = learning_rate
+        sigma = gaussian_sigma
+        can_grow = self.__can_grow(input_dataset)
+        iter = 1
+        while can_grow:
+            # updating weights
+            data = input_dataset[np.random.randint(len(input_dataset))]
+            gauss_kernel = self.__gaussian_kernel(self.winner_idx(data), sigma)
+            self.__update_neurons(data, gauss_kernel, lr)
+            # updating lr and sigma
+            lr *= decay
+            sigma *= decay
+            # updating map dimensions
+            if (iter % epochs) == 0:
+                can_grow = self.__can_grow(input_dataset)
+                if can_grow:
+                    self.grow()
+                lr = learning_rate
+                sigma = gaussian_sigma
+            iter += 1
+
+    def __update_neurons(self, data, gaussian_kernel, learning_rate):
+        # updating neurons weight
+        map_iter = np.nditer(self.neurons_map, flags=['multi_index'])
+        while not map_iter.finished:
+            weight = self.neurons_map[map_iter.multi_index].__weight_vector
+            weight += learning_rate * gaussian_kernel[map_iter.multi_index] * (data - weight)
+            weight /= np.linalg.norm(weight)
+            self.neurons_map[map_iter.multi_index].__weight_vector = weight
+            map_iter.iternext()
+
+    def __gaussian_kernel(self, winner_neuron, gaussian_sigma):
+        # TODO: kernel area != 1 (multiply kernel and A = 1/[2*pi*(gaussian_sigma**2)] to obtain a unit area). probably it's not necessary
+        # computing gaussian kernel
+        s = 2 * (gaussian_sigma) ** 2
+        gauss_y = np.power(np.asarray(range(self.neurons_map.shape[0])) - winner_neuron[0], 2) / s
+        gauss_x = np.power(np.asarray(range(self.neurons_map.shape[1])) - winner_neuron[1], 2) / s
+        return np.exp(-1 * np.outer(gauss_x, gauss_y))
 
     def __can_grow(self, input_dataset):
         MQE = 0.0

@@ -17,7 +17,6 @@ class Neuron:
         self.input_dataset = list()
 
     def activation(self, data):
-        # activation function
         return np.linalg.norm(data - self.__weight_vector)
 
     def needs_child_map(self):
