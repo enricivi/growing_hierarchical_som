@@ -7,7 +7,7 @@ class GSOM:
         self.__t1 = t1
         self.__t2 = t2
         self.__parent_quantization_error = parent_quantization_error
-        self.__map_size = initial_map_size
+        self.__init_map_size = initial_map_size
         self.__growing_metric = growing_metric
 
         # i'm not so sure...
@@ -50,6 +50,27 @@ class GSOM:
                 lr = learning_rate
                 sigma = gaussian_sigma
             iter += 1
+
+        neurons_to_expand = list()
+        self.__map_data_to_neurons(input_dataset)
+        map_iter = np.nditer(self.neurons_map, flags=['multi_index'])
+        while not map_iter.finished:
+            if self.neurons_map[map_iter.multi_index].needs_child_map():
+                neurons_to_expand.append(map_iter.multi_index)
+            map_iter.iternext()
+        for neuron_pos in neurons_to_expand:
+            self.neurons_map[neuron_pos].child_map = GSOM(
+                self.__init_map_size,
+                self.__parent_quantization_error,
+                self.__t1,
+                self.__t2,
+                self.__growing_metric,
+                self.__init_child_neuron()
+            )
+            self.neurons_map[neuron_pos].child_map.train(
+                np.asarray(self.neurons_map[neuron_pos].input_dataset),
+                epochs, learning_rate, decay, gaussian_sigma
+            )
 
     def __update_neurons(self, data, gaussian_kernel, learning_rate):
         # updating neurons weight
@@ -120,6 +141,9 @@ class GSOM:
             neuron_iter.iternext()
 
         return np.unravel_index(weight_distances_map.max(), dims=weight_distances_map.shape)
+
+    def __init_child_neuron(self):
+        raise NotImplementedError
 
     def grow(self):
         raise NotImplementedError

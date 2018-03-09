@@ -21,7 +21,10 @@ class Neuron:
 
     def needs_child_map(self):
         needs_maps = True
-        if self.compute_quantization_error() < (self.__t2 * self.__zero_quantization_error):
+        try:
+            if self.compute_quantization_error() < (self.__t2 * self.__zero_quantization_error):
+                needs_maps = False
+        except AssertionError:
             needs_maps = False
 
         return needs_maps

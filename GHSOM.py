@@ -27,7 +27,7 @@ class GHSOM:
         )
 
         zero_unit.input_dataset = self.__input_dataset
-        self.__zero_quantization_error = zero_unit.calc_quantization_error()
+        self.__zero_quantization_error = zero_unit.compute_quantization_error()
 
         zero_unit.child_map = GSOM(
             (2, 2),
