@@ -61,7 +61,7 @@ class GSOM:
         for neuron_pos in neurons_to_expand:
             self.neurons_map[neuron_pos].child_map = GSOM(
                 self.__init_map_size,
-                self.__parent_quantization_error,
+                self.neurons_map[neuron_pos].compute_quantization_error(),
                 self.__t1,
                 self.__t2,
                 self.__growing_metric,
