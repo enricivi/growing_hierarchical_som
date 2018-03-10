@@ -65,7 +65,7 @@ class GSOM:
                 self.__t1,
                 self.__t2,
                 self.__growing_metric,
-                self.__init_child_neuron()
+                self.__init_new_map(neuron_pos)
             )
             self.neurons_map[neuron_pos].child_map.train(
                 np.asarray(self.neurons_map[neuron_pos].input_dataset),
@@ -142,8 +142,41 @@ class GSOM:
 
         return np.unravel_index(weight_distances_map.max(), dims=weight_distances_map.shape)
 
-    def __init_child_neuron(self):
-        raise NotImplementedError
+    def __init_new_map(self, parent_position):
+        """
+         ______ ______ ______
+        |      |      |      |         child (2x2)
+        | pnfp |      |      |          ______ ______
+        |______|______|______|         |      |      |
+        |      |      |      |         |(0,0) |(0,1) |
+        |      |parent|      |  ---->  |______|______|
+        |______|______|______|         |      |      |
+        |      |      |      |         |(1,0) |(1,1) |
+        |      |      |      |         |______|______|
+        |______|______|______|
+
+        """
+        # TODO: this method must be generalized
+        parent_neighbourhood_first_position = (parent_position[0]-1, parent_position[1]-1)
+        weights = dict()
+        for idx in range(4):
+            position = np.unravel_index(idx, dims=(2, 2))
+            __pos = (
+                parent_neighbourhood_first_position[0] + position[0],
+                parent_neighbourhood_first_position[1] + position[1]
+            )
+
+            weight = np.zeros(shape=self.neurons_map[parent_position].__weight_vector.shape, dtype=np.float32)
+            for inner_idx in range(4):
+                inner_pos = np.unravel_index(idx, dims=(2, 2))
+                inner_pos = (__pos[0] + inner_pos[0], __pos[1] + inner_pos[1])
+                if (inner_pos[0] >= 0) and (inner_pos[1] >= 0):
+                    if (inner_pos[0] < self.neurons_map.shape[0]) and (inner_pos[1] < self.neurons_map.shape[1]):
+                        weight += ( 0.25 * self.neurons_map[inner_pos] )
+
+            weights[position] = weight / np.linalg.norm(weight)
+
+        return weights
 
     def grow(self):
         raise NotImplementedError

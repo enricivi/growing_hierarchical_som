@@ -26,7 +26,7 @@ class GHSOM:
             self.__growing_metric
         )
 
-        zero_unit.input_dataset = self.__input_dataset
+        zero_unit.input_dataset = list(self.__input_dataset)
         self.__zero_quantization_error = zero_unit.compute_quantization_error()
 
         zero_unit.child_map = GSOM(
