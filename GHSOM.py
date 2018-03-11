@@ -1,5 +1,5 @@
-from unit import Unit
-from som import Map
+from neuron import Neuron
+from GSOM import GSOM
 import numpy as np
 
 
@@ -19,20 +19,22 @@ class GHSOM:
         self.__epoch_number = epoch_number
 
     def __call__(self, *args, **kwargs):
-        zero_unit = Unit(
+        zero_unit = Neuron(
             self.__calc_input_mean(),
             None,
             None,
             self.__growing_metric
         )
 
-        zero_unit.input_dataset = self.__input_dataset
-        self.__zero_quantization_error = zero_unit.calc_quantization_error()
+        zero_unit.input_dataset = list(self.__input_dataset)
+        self.__zero_quantization_error = zero_unit.compute_quantization_error()
 
-        zero_unit.child_map = Map(
+        zero_unit.child_map = GSOM(
             (2, 2),
             self.__zero_quantization_error,
             self.__t1,
+            self.__t2,
+            self.__growing_metric,
             self.__calc_initial_random_weights()
         )
 
@@ -41,8 +43,7 @@ class GHSOM:
             self.__epoch_number,
             self.__learning_rate,
             self.__decay,
-            self.__gaussian_sigma,
-            self.__t2
+            self.__gaussian_sigma
         )
 
     def __calc_input_mean(self):
