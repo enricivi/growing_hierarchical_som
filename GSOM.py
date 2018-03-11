@@ -10,24 +10,21 @@ class GSOM:
         self.__init_map_size = initial_map_size
         self.__growing_metric = growing_metric
 
-        # i'm not so sure...
-        self.neurons_map = np.asarray(
-            a=[[None for _ in range(initial_map_size[0])] for _ in range(initial_map_size[1])],
-            dtype=object
-        )
+        self.neurons_map = np.zeros(initial_map_size, dtype=object)
+
         if weights_vectors_dict is not None:
             for position, weight in weights_vectors_dict.items():
-                self.neurons_map[position] = Neuron(weight, self.__parent_quantization_error, self.__t2, growing_metric)
+                self.neurons_map[position] = self.__build_neuron(weight, growing_metric)
+
+    def __build_neuron(self, weight, growing_metric):
+        return Neuron(weight, self.__parent_quantization_error, self.__t2, growing_metric)
 
     def winner_idx(self, data):
-        activations = np.empty(shape=self.neurons_map.shape, dtype=np.float32)
+        activations = list()
+        for neuron in np.nditer(self.neurons_map):
+            activations.append(neuron.activation(data))
 
-        activations_iter = np.nditer(activations, flags=['multi_index'])
-        while not activations_iter.finished:
-            activations[activations_iter.multi_index] = self.neurons_map[activations_iter.multi_index].activation(data)
-            activations_iter.iternext()
-
-        return np.unravel_index(activations.min(), dims=activations.shape)
+        return np.unravel_index(np.argmin(activations), dims=self.neurons_map.shape)
 
     def train(self, input_dataset, epochs, learning_rate, decay, gaussian_sigma):
         lr = learning_rate
@@ -85,7 +82,7 @@ class GSOM:
     def __gaussian_kernel(self, winner_neuron, gaussian_sigma):
         # TODO: kernel area != 1 (multiply kernel and A = 1/[2*pi*(gaussian_sigma**2)] to obtain a unit area). probably it's not necessary
         # computing gaussian kernel
-        s = 2 * (gaussian_sigma) ** 2
+        s = 2 * gaussian_sigma ** 2
         gauss_y = np.power(np.asarray(range(self.neurons_map.shape[0])) - winner_neuron[0], 2) / s
         gauss_x = np.power(np.asarray(range(self.neurons_map.shape[1])) - winner_neuron[1], 2) / s
         return np.exp(-1 * np.outer(gauss_x, gauss_y))
@@ -106,15 +103,16 @@ class GSOM:
         return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
 
     def __map_data_to_neurons(self, input_dataset):
-        # reset previous mapping
-        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
-        while not neuron_iter.finished:
-            self.neurons_map[neuron_iter.multi_index].input_dataset.clear()
-            neuron_iter.iternext()
+        self.__clear_neurons_dataset()
+
         # finding the new association for each neuron
         for data in input_dataset:
             winner = self.winner_idx(data)
             self.neurons_map[winner].input_dataset.append(data)
+
+    def __clear_neurons_dataset(self):
+        for neuron in np.nditer(self.neurons_map):
+            neuron.input_dataset.clear()
 
     def __find_error_neuron(self, input_dataset):
         self.__map_data_to_neurons(input_dataset)
