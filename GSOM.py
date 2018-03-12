@@ -179,11 +179,10 @@ class GSOM:
     def grow(self, input_dataset):
         error_neuron_pos = self.__find_error_neuron(input_dataset)
         dissimilar_neuron_pos = self.__find_most_dissimilar_neuron(error_neuron_pos)    # strange error
-        direction = self.adjacent_neurons_direction(error_neuron_pos, dissimilar_neuron_pos)
-        if direction == 'horizontal':
-            self.expand_row(error_neuron_pos[0], dissimilar_neuron_pos[0])
-        else:
+        if (dissimilar_neuron_pos[0] - error_neuron_pos[0]) == 0:
             self.expand_column(error_neuron_pos[1], dissimilar_neuron_pos[1])
+        else:
+            self.expand_row(error_neuron_pos[0], dissimilar_neuron_pos[0])
         self.__init_new_neurons_weight_vector()
 
     def expand_column(self, error_unit_column_idx, dissimilar_unit_column_idx):
@@ -196,11 +195,11 @@ class GSOM:
         neurons = np.zeros(shape=(1, new_neurons), dtype=object)
         np.insert(self.neurons_map, max(error_unit_row_idx, dissimilar_unit_row_idx), neurons, axis=0)
 
-    def adjacent_neurons_direction(self, unit1, unit2):
-        # returns horizontal or vertical
-        raise NotImplementedError
-
     def __init_new_neurons_weight_vector(self):
-        # the new units weight vector are initialized
-        # as the average of their corresponding neighbors.
-        raise NotImplementedError
+        new_neurons = np.where(self.neurons_map == 0)
+        axis = ((0, 0), (1, -1)) if (np.mean(new_neurons[0] == new_neurons[0][0])) else ((1, -1), (0, 0))
+        for i, j in new_neurons:
+            weight = np.zeros(shape=self.neurons_map[0, 0].__weight_vector.shape, dtype=np.float32)
+            for di, dj in axis:
+                weight += 0.5 * self.neurons_map[i + di, j + dj].__weight_vector
+            self.neurons_map[i, j].__weight_vector = weight / np.linalg.norm(weight)
