@@ -97,7 +97,7 @@ class GSOM:
 
         MQE = 0.0
         mapped_neurons = 0
-        for neuron in self.neurons_map:
+        for neuron in np.nditer(self.neurons_map):
             if len(neuron.input_dataset) != 0:
                 MQE += neuron.compute_quantization_error()
                 mapped_neurons += 1
