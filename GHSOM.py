@@ -46,6 +46,8 @@ class GHSOM:
             self.__gaussian_sigma
         )
 
+        return zero_unit
+
     def __calc_input_mean(self):
         return self.__input_dataset.mean(axis=0)
 
