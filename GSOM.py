@@ -14,17 +14,17 @@ class GSOM:
 
         if weights_vectors_dict is not None:
             for position, weight in weights_vectors_dict.items():
-                self.neurons_map[position] = self.__build_neuron(weight, growing_metric)
+                self.neurons_map[position] = self.__build_neuron(weight)
 
-    def __build_neuron(self, weight, growing_metric):
-        return Neuron(weight, self.__parent_quantization_error, self.__t2, growing_metric)
+    def __build_neuron(self, weight):
+        # NOTE: reviewed
+        return Neuron(weight, self.__parent_quantization_error, self.__t2, self.__growing_metric)
 
     def winner_idx(self, data):
+        # NOTE: reviewed
         activations = list()
-        map_iter = np.nditer(self.neurons_map, flags=['multi_index', 'refs_ok'])
-        while not map_iter.finished:
-            activations.append(self.neurons_map[map_iter.multi_index].activation(data))
-            map_iter.iternext()
+        for neuron in np.nditer(self.neurons_map):
+            activations.append(neuron.activation(data))
 
         return np.unravel_index(np.argmin(activations), dims=self.neurons_map.shape)
 
@@ -92,21 +92,20 @@ class GSOM:
         return np.exp(-1 * np.outer(gauss_x, gauss_y))
 
     def __can_grow(self, input_dataset):
+        # NOTE: reviewed
+        self.__map_data_to_neurons(input_dataset)
+
         MQE = 0.0
         mapped_neurons = 0
-
-        self.__map_data_to_neurons(input_dataset)
-        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index', 'refs_ok'])
-        while not neuron_iter.finished:
-            neuron = self.neurons_map[neuron_iter.multi_index]
+        for neuron in self.neurons_map:
             if len(neuron.input_dataset) != 0:
                 MQE += neuron.compute_quantization_error()
                 mapped_neurons += 1
-            neuron_iter.iternext()
 
         return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
 
     def __map_data_to_neurons(self, input_dataset):
+        # NOTE: reviewed
         self.__clear_neurons_dataset()
 
         # finding the new association for each neuron
@@ -115,35 +114,38 @@ class GSOM:
             self.neurons_map[winner].input_dataset.append(data)
 
     def __clear_neurons_dataset(self):
-        map_iter = np.nditer(self.neurons_map, flags=['multi_index', 'refs_ok'])
-        while not map_iter.finished:
-            self.neurons_map[map_iter.multi_index].input_dataset.clear()
-            map_iter.iternext()
+        # NOTE: reviewed
+        for neuron in np.nditer(self.neurons_map):
+            neuron.input_dataset.clear()
 
-    def __find_error_neuron(self, input_dataset):
+    def __find_error_neuron_idx(self, input_dataset):
+        # NOTE: reviewed
         self.__map_data_to_neurons(input_dataset)
 
-        quantization_errors_map = np.zeros(shape=self.neurons_map.shape, dtype=np.float32)
-        qem_iter = np.nditer(quantization_errors_map, flags=['multi_index'])
-        while not qem_iter.finished:
-            neuron = self.neurons_map[qem_iter.multi_index]
+        quantization_errors = list()
+        for neuron in np.nditer(self.neurons_map):
+            quantization_error = -np.inf
             if len(neuron.input_dataset) != 0:
-                quantization_errors_map[qem_iter.multi_index] += neuron.compute_quantization_error()
-            qem_iter.iternext()
-        return np.unravel_index(quantization_errors_map.argmax(), dims=quantization_errors_map.shape)
+                quantization_error = neuron.compute_quantization_error()
+            quantization_errors.append(quantization_error)
 
-    def __find_most_dissimilar_neuron(self, error_unit_position):
-        weight_distances_map = np.zeros(shape=self.neurons_map.shape, dtype=np.float32)
+        return np.unravel_index(np.argmax(quantization_errors), dims=self.neurons_map.shape)
 
+    def __find_most_dissimilar_neuron_idx(self, error_unit_position):
+        # NOTE: reviewed
         error_neuron = self.neurons_map[error_unit_position]
-        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index', 'refs_ok'])
+        weight_distances = dict()
+
+        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
         while not neuron_iter.finished:
-            if np.linalg.norm(np.asarray(error_unit_position) - np.asarray(neuron_iter.multi_index), ord=1) == 1:
-                neighbour = self.neurons_map[neuron_iter.multi_index]
-                weight_distances_map[neuron_iter.multi_index] = error_neuron.weight_distance_from_other_unit(neighbour)
+            neuron_position = neuron_iter.multi_index
+            if self.are_neurons_neighbours(error_unit_position, neuron_position):
+                neighbour = self.neurons_map[neuron_position]
+                weight_distances[neuron_position] = error_neuron.weight_distance_from_other_unit(neighbour)
+
             neuron_iter.iternext()
 
-        return np.unravel_index(weight_distances_map.argmax(), dims=weight_distances_map.shape)
+        return max(weight_distances, key=weight_distances.get)
 
     def __init_new_map(self, parent_position):
         """
@@ -182,30 +184,76 @@ class GSOM:
         return weights
 
     def grow(self, input_dataset):
-        error_neuron_pos = self.__find_error_neuron(input_dataset)
-        dissimilar_neuron_pos = self.__find_most_dissimilar_neuron(error_neuron_pos)    # strange error
-        if (dissimilar_neuron_pos[0] - error_neuron_pos[0]) == 0:
-            self.expand_column(error_neuron_pos[1], dissimilar_neuron_pos[1])
+        # NOTE: reviewed
+        error_neuron_pos = self.__find_error_neuron_idx(input_dataset)
+        dissimilar_neuron_pos = self.__find_most_dissimilar_neuron_idx(error_neuron_pos)
+
+        if self.are_in_same_row(error_neuron_pos, dissimilar_neuron_pos):
+            new_neuron_idxs = self.add_column_between(error_neuron_pos[1], dissimilar_neuron_pos[1])
+            self.__init_new_neurons_weight_vector(new_neuron_idxs, "horizontal")
+
+        elif self.are_in_same_column(error_neuron_pos, dissimilar_neuron_pos):
+            new_neuron_idxs = self.add_row_between(error_neuron_pos[0], dissimilar_neuron_pos[0])
+            self.__init_new_neurons_weight_vector(new_neuron_idxs, "vertical")
         else:
-            self.expand_row(error_neuron_pos[0], dissimilar_neuron_pos[0])
-        self.__init_new_neurons_weight_vector()
+            raise RuntimeError("Error neuron and the most dissimilar are not adjacent")
 
-    def expand_column(self, error_unit_column_idx, dissimilar_unit_column_idx):
-        new_neurons = self.neurons_map.shape[0]
-        neurons = np.zeros(shape=(1, new_neurons), dtype=object)
-        self.neurons_map = np.insert(self.neurons_map, max(error_unit_column_idx, dissimilar_unit_column_idx), neurons, axis=1)
+    def add_column_between(self, error_unit_column_idx, dissimilar_unit_column_idx):
+        # NOTE: reviewed
+        line_size = self.neurons_map.shape[1]
+        line = np.zeros(shape=line_size, dtype=object)
+        new_column_idx = max(error_unit_column_idx, dissimilar_unit_column_idx)
+        self.neurons_map = np.insert(self.neurons_map, new_column_idx, line, axis=1)
 
-    def expand_row(self, error_unit_row_idx, dissimilar_unit_row_idx):
-        new_neurons = self.neurons_map.shape[1]
-        neurons = np.zeros(shape=(1, new_neurons), dtype=object)
-        self.neurons_map = np.insert(self.neurons_map, max(error_unit_row_idx, dissimilar_unit_row_idx), neurons, axis=0)
+        return np.transpose(np.where(self.neurons_map == 0))
 
-    def __init_new_neurons_weight_vector(self):
-        new_neurons = np.where(self.neurons_map == 0)
-        axis = ((1, -1), (0, 0)) if (np.mean(new_neurons[0]) == new_neurons[0][0]) else ((0, 0), (1, -1))
-        for i, j in zip(new_neurons[0], new_neurons[1]):
-            weight = np.zeros(shape=self.neurons_map[0, 0].weight_vector.shape, dtype=np.float32)
-            for di, dj in zip(axis[0], axis[1]):
-                weight += 0.5 * self.neurons_map[i + di, j + dj].weight_vector
-            self.neurons_map[i, j] = Neuron(weight / np.linalg.norm(weight), self.__parent_quantization_error,
-                                            self.__t2, self.__growing_metric)
+    def add_row_between(self, error_unit_row_idx, dissimilar_unit_row_idx):
+        # NOTE: reviewed
+        line_size = self.neurons_map.shape[0]
+        line = np.zeros(shape=line_size, dtype=object)
+        new_row_idx = max(error_unit_row_idx, dissimilar_unit_row_idx)
+        self.neurons_map = np.insert(self.neurons_map, new_row_idx, line, axis=0)
+
+        return np.transpose(np.where(self.neurons_map == 0))
+
+    def __init_new_neurons_weight_vector(self, new_neuron_idxs, new_line_direction):
+        # NOTE: reviewed
+        for row, col in new_neuron_idxs:
+            adjacent_neuron_idxs = self.__get_adjacent_neuron_idxs_by_direction(row, col, new_line_direction)
+            weight_vector = self.__mean_weight_vector(adjacent_neuron_idxs)
+
+            self.neurons_map[row, col] = self.__build_neuron(weight_vector)
+
+    def __mean_weight_vector(self, neuron_idxs):
+        # NOTE: reviewed
+        weight_vector = np.zeros(shape=self.neurons_map[0, 0].weight_vector.shape, dtype=np.float32)
+        for adjacent_idx in neuron_idxs:
+            weight_vector += 0.5 * self.neurons_map[adjacent_idx].weight_vector
+        return weight_vector
+
+    @staticmethod
+    def __get_adjacent_neuron_idxs_by_direction(row, col, direction):
+        # NOTE: reviewed
+        adjacent_neuron_idxs = list()
+        if direction == "vertical":
+            adjacent_neuron_idxs = [(row, col - 1), (row, col + 1)]
+
+        elif direction == "horizontal":
+            adjacent_neuron_idxs = [(row - 1, col), (row + 1, col)]
+
+        return adjacent_neuron_idxs
+
+    @staticmethod
+    def are_neurons_neighbours(first_neuron_idx, second_neuron_idx):
+        # NOTE: reviewed
+        return np.linalg.norm(np.asarray(first_neuron_idx) - np.asarray(second_neuron_idx), ord=1) == 1
+
+    @staticmethod
+    def are_in_same_row(first_neuron_idx, second_neuron_idx):
+        # NOTE: reviewed
+        return abs(first_neuron_idx[0] - second_neuron_idx[0]) == 0
+
+    @staticmethod
+    def are_in_same_column(first_neuron_idx, second_neuron_idx):
+        # NOTE: reviewed
+        return abs(first_neuron_idx[1] - second_neuron_idx[1]) == 0
