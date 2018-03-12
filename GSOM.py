@@ -127,7 +127,7 @@ class GSOM:
 
         return np.unravel_index(quantization_errors_map.max(), dims=quantization_errors_map.shape)
 
-    def find_most_dissimilar_unit(self, error_unit_position):
+    def __find_most_dissimilar_neuron(self, error_unit_position):
         weight_distances_map = np.zeros(shape=self.neurons_map.shape, dtype=np.float32)
 
         error_neuron = self.neurons_map[error_unit_position]
@@ -176,20 +176,31 @@ class GSOM:
 
         return weights
 
-    def grow(self):
-        raise NotImplementedError
+    def grow(self, input_dataset):
+        error_neuron_pos = self.__find_error_neuron(input_dataset)
+        dissimilar_neuron_pos = self.__find_most_dissimilar_neuron(error_neuron_pos)    # strange error
+        direction = self.adjacent_neurons_direction(error_neuron_pos, dissimilar_neuron_pos)
+        if direction == 'horizontal':
+            self.expand_row(error_neuron_pos[0], dissimilar_neuron_pos[0])
+        else:
+            self.expand_column(error_neuron_pos[1], dissimilar_neuron_pos[1])
+        self.__init_new_neurons_weight_vector()
 
     def expand_column(self, error_unit_column_idx, dissimilar_unit_column_idx):
-        raise NotImplementedError
+        new_neurons = self.neurons_map.shape[1]
+        neurons = np.zeros(shape=(1, new_neurons), dtype=object)
+        np.insert(self.neurons_map, max(error_unit_column_idx, dissimilar_unit_column_idx), neurons, axis=1)
 
     def expand_row(self, error_unit_row_idx, dissimilar_unit_row_idx):
-        raise NotImplementedError
+        new_neurons = self.neurons_map.shape[0]
+        neurons = np.zeros(shape=(1, new_neurons), dtype=object)
+        np.insert(self.neurons_map, max(error_unit_row_idx, dissimilar_unit_row_idx), neurons, axis=0)
 
-    def adjacent_units_direction(self, unit1, unit2):
+    def adjacent_neurons_direction(self, unit1, unit2):
         # returns horizontal or vertical
         raise NotImplementedError
 
-    def init_new_unit_weight_vector(self, unit_idx):
+    def __init_new_neurons_weight_vector(self):
         # the new units weight vector are initialized
         # as the average of their corresponding neighbors.
         raise NotImplementedError
