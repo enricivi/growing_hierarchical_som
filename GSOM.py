@@ -114,31 +114,33 @@ class GSOM:
         for neuron in np.nditer(self.neurons_map):
             neuron.input_dataset.clear()
 
-    def __find_error_neuron(self, input_dataset):
+    def __find_error_neuron_idx(self, input_dataset):
         self.__map_data_to_neurons(input_dataset)
 
-        quantization_errors_map = np.zeros(shape=self.neurons_map.shape, dtype=np.float32)
-        qem_iter = np.nditer(quantization_errors_map, flags=['multi_index'])
-        while not qem_iter.finished:
-            neuron = self.neurons_map[qem_iter.multi_index]
+        quantization_errors = list()
+        for neuron in np.nditer(self.neurons_map):
+            quantization_error = -np.inf
             if len(neuron.input_dataset) != 0:
-                quantization_errors_map[qem_iter.multi_index] += neuron.compute_quantization_error()
-            qem_iter.iternext()
+                quantization_error = neuron.compute_quantization_error()
 
-        return np.unravel_index(quantization_errors_map.max(), dims=quantization_errors_map.shape)
+            quantization_errors.append(quantization_error)
 
-    def __find_most_dissimilar_neuron(self, error_unit_position):
-        weight_distances_map = np.zeros(shape=self.neurons_map.shape, dtype=np.float32)
+        return np.unravel_index(np.argmax(quantization_errors), dims=self.neurons_map.shape)
 
+    def __find_most_dissimilar_neuron_idx(self, error_unit_position):
         error_neuron = self.neurons_map[error_unit_position]
+        weight_distances = dict()
+
         neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
         while not neuron_iter.finished:
-            if np.linalg.norm(error_unit_position - neuron_iter.multi_index, ord=1) == 1:
-                neighbour = self.neurons_map[neuron_iter.multi_index]
-                weight_distances_map[neuron_iter.multi_index] = error_neuron.weight_distance_from_other_unit(neighbour)
+            neuron_position = neuron_iter.multi_index
+            if self.are_neurons_neighbours(error_unit_position, neuron_position):
+                neighbour = self.neurons_map[neuron_position]
+                weight_distances[neuron_position] = error_neuron.weight_distance_from_other_unit(neighbour)
+
             neuron_iter.iternext()
 
-        return np.unravel_index(weight_distances_map.max(), dims=weight_distances_map.shape)
+        return max(weight_distances, key=weight_distances.get)
 
     def __init_new_map(self, parent_position):
         """
@@ -177,8 +179,8 @@ class GSOM:
         return weights
 
     def grow(self, input_dataset):
-        error_neuron_pos = self.__find_error_neuron(input_dataset)
-        dissimilar_neuron_pos = self.__find_most_dissimilar_neuron(error_neuron_pos)    # strange error
+        error_neuron_pos = self.__find_error_neuron_idx(input_dataset)
+        dissimilar_neuron_pos = self.__find_most_dissimilar_neuron_idx(error_neuron_pos)    # strange error
         if (dissimilar_neuron_pos[0] - error_neuron_pos[0]) == 0:
             self.expand_column(error_neuron_pos[1], dissimilar_neuron_pos[1])
         else:
@@ -203,3 +205,7 @@ class GSOM:
             for di, dj in axis:
                 weight += 0.5 * self.neurons_map[i + di, j + dj].__weight_vector
             self.neurons_map[i, j].__weight_vector = weight / np.linalg.norm(weight)
+
+    @staticmethod
+    def are_neurons_neighbours(first_neuron_idx, second_neuron_idx):
+        return np.linalg.norm(first_neuron_idx - second_neuron_idx, ord=1) == 1
