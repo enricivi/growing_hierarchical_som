@@ -88,17 +88,14 @@ class GSOM:
         return np.exp(-1 * np.outer(gauss_x, gauss_y))
 
     def __can_grow(self, input_dataset):
+        self.__map_data_to_neurons(input_dataset)
+
         MQE = 0.0
         mapped_neurons = 0
-
-        self.__map_data_to_neurons(input_dataset)
-        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
-        while not neuron_iter.finished:
-            neuron = self.neurons_map[neuron_iter.multi_index]
+        for neuron in self.neurons_map:
             if len(neuron.input_dataset) != 0:
                 MQE += neuron.compute_quantization_error()
                 mapped_neurons += 1
-            neuron_iter.iternext()
 
         return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
 
