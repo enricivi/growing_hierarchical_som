@@ -1,26 +1,24 @@
-from typing import List
-
 import numpy as np
 
 
 class Neuron:
-    input_dataset = list()  # type: List
-
-    def __init__(self, weight_vector, zero_quantization_error, t2, growing_metric):
+    def __init__(self, weight_map, weight_vector_position, zero_quantization_error, t2, growing_metric):
         """
         :type t2: The tau_2 parameter
         :type zero_quantization_error: The quantization error of the layer 0
-        :type weight_vector: the initial weight vector for the unit - m_i
         """
         self.__growing_metric = growing_metric
         self.__t2 = t2
         self.__zero_quantization_error = zero_quantization_error
-        self.weight_vector = weight_vector
+
+        self.__weight_map = weight_map
+        self.__weight_idx = weight_vector_position
 
         self.child_map = None
+        self.input_dataset = None
 
     def activation(self, data):
-        return np.linalg.norm(np.subtract(data, self.weight_vector), axis=0)
+        return np.linalg.norm(np.subtract(data, self.weight_vector()), axis=0)
 
     def needs_child_map(self):
         return self.compute_quantization_error() >= (self.__t2 * self.__zero_quantization_error)
@@ -38,4 +36,7 @@ class Neuron:
         return quantization_error
 
     def weight_distance_from_other_unit(self, unit):
-        return np.linalg.norm(self.weight_vector - unit.weight_vector)
+        return np.linalg.norm(self.weight_vector() - unit.weight_vector)
+
+    def weight_vector(self):
+        return self.__weight_map[self.__weight_idx]
