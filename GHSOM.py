@@ -38,13 +38,8 @@ class GHSOM:
             self.__calc_initial_random_weights()
         )
 
-        zero_unit.child_map.train(
-            self.__input_dataset,
-            self.__epoch_number,
-            self.__learning_rate,
-            self.__decay,
-            self.__gaussian_sigma
-        )
+        zero_unit.child_map.train(self.__input_dataset, self.__epoch_number, self.__gaussian_sigma,
+                                  self.__learning_rate, self.__decay)
 
         return zero_unit
 

@@ -28,26 +28,14 @@ class GSOM:
 
         return np.unravel_index(np.argmin(activations), dims=self.neurons_map.shape)
 
-    def train(self, input_dataset, epochs, learning_rate, decay, gaussian_sigma):
-        lr = learning_rate
-        sigma = gaussian_sigma
-        can_grow = self.__can_grow(input_dataset)
-        iter = 1
+    def train(self, input_dataset, epochs, initial_gaussian_sigma, initial_learning_rate, decay):
+        can_grow = True
         while can_grow:
-            # updating weights
-            data = input_dataset[np.random.randint(len(input_dataset))]
-            self.__update_neurons(data, lr, sigma)
-            # updating lr and sigma
-            lr *= decay
-            sigma *= decay
-            # updating map dimensions
-            if (iter % epochs) == 0:
-                can_grow = self.__can_grow(input_dataset)
-                if can_grow:
-                    self.grow(input_dataset)
-                lr = learning_rate
-                sigma = gaussian_sigma
-            iter += 1
+            self.__neurons_training(decay, epochs, input_dataset, initial_learning_rate, initial_gaussian_sigma)
+
+            can_grow = self.__can_grow(input_dataset)
+            if can_grow:
+                self.grow(input_dataset)
 
         print(self.neurons_map.shape)
 
@@ -67,10 +55,16 @@ class GSOM:
                 self.__growing_metric,
                 self.__init_new_map(neuron_pos)
             )
-            self.neurons_map[neuron_pos].child_map.train(
-                np.asarray(self.neurons_map[neuron_pos].input_dataset),
-                epochs, learning_rate, decay, gaussian_sigma
-            )
+            self.neurons_map[neuron_pos].child_map.train(np.asarray(self.neurons_map[neuron_pos].input_dataset), epochs,
+                                                         initial_gaussian_sigma, initial_learning_rate, decay)
+
+    def __neurons_training(self, decay, epochs, input_dataset, learning_rate, sigma):
+        for iteration in range(epochs):
+            data = input_dataset[np.random.randint(len(input_dataset))]
+            self.__update_neurons(data, learning_rate, sigma)
+
+            learning_rate *= decay
+            sigma *= decay
 
     def __update_neurons(self, data, learning_rate, sigma):
         gauss_kernel = self.__gaussian_kernel(self.winner_idx(data), sigma)
