@@ -1,4 +1,4 @@
-from neuron import Neuron
+from neuron import NeuronBuilder
 from GSOM import GSOM
 import numpy as np
 from queue import Queue
@@ -20,15 +20,14 @@ class GHSOM:
         self.__epoch_number = epoch_number
 
     def __call__(self, *args, **kwargs):
-        zero_unit_map = self.__init_zero_unit()
+        zero_unit_child_map = self.__init_zero_unit()
 
         map_queue = Queue()
-        map_queue.put(zero_unit_map)
+        map_queue.put(zero_unit_child_map)
 
         while not map_queue.empty():
             gmap = map_queue.get()
             gmap.train(
-                self.__input_dataset,
                 self.__epoch_number,
                 self.__gaussian_sigma,
                 self.__learning_rate,
@@ -44,30 +43,29 @@ class GHSOM:
                     self.__t2,
                     self.__growing_metric,
                     self.__input_dataset.shape[1],
-                    self.__new_map_weights(neuron.position, gmap.weights_map)
+                    self.__new_map_weights(neuron.position, gmap.weights_map),
+                    neuron.input_dataset
                 )
 
                 map_queue.put(neuron.child_map)
 
     def __init_zero_unit(self):
-        zero_unit = Neuron(
+        zero_unit = NeuronBuilder.zero_neuron(
             np.reshape(self.__calc_input_mean(), newshape=(1, 1, self.__input_dataset.shape[1])),
-            (0, 0),
-            None,
-            None,
+            self.__input_dataset,
+            self.__t2,
             self.__growing_metric
         )
-        zero_unit.input_dataset = self.__input_dataset
-        self.__zero_quantization_error = zero_unit.compute_quantization_error()
 
         zero_unit.child_map = GSOM(
             (2, 2),
-            self.__zero_quantization_error,
+            NeuronBuilder.get_zero_quantization_error(),
             self.__t1,
             self.__t2,
             self.__growing_metric,
             self.__input_dataset.shape[1],
-            self.__calc_initial_random_weights()
+            self.__calc_initial_random_weights(),
+            zero_unit.input_dataset
         )
 
         return zero_unit.child_map
@@ -109,7 +107,8 @@ class GHSOM:
 
         return child_weights
 
-    def __generate_kernel_stencil(self, parent_position):
+    @staticmethod
+    def __generate_kernel_stencil(parent_position):
         row, col = parent_position
         return np.asarray([
             (r, c)
@@ -117,7 +116,8 @@ class GHSOM:
             for c in range(col - 1, col + 1)
         ])
 
-    def __check_position(self, position, map_size):
+    @staticmethod
+    def __check_position(position, map_size):
         row, col = position
         map_rows, map_cols = map_size
         return (row >= 0 and col >=0) and (row < map_rows and col < map_cols)

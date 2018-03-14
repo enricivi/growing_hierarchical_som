@@ -1,16 +1,18 @@
-from neuron import Neuron
+from neuron import NeuronBuilder
 import numpy as np
 
 
 class GSOM:
     def __init__(self, initial_map_size, parent_quantization_error, t1, t2, growing_metric, data_size,
-                 weights_map):
+                 weights_map, parent_dataset):
+        assert parent_dataset is not None, "Provided dataset is empty"
         self.__data_size = data_size
         self.__t1 = t1
         self.__t2 = t2
         self.__parent_quantization_error = parent_quantization_error
         self.__initial_map_size = initial_map_size
         self.__growing_metric = growing_metric
+        self.__parent_dataset = parent_dataset
 
         self.weights_map = weights_map
 
@@ -25,16 +27,16 @@ class GSOM:
         idx = np.unravel_index(np.argmin(activations), dims=self.__map_shape())
         return self.neurons[idx]
 
-    def train(self, input_dataset, epochs, initial_gaussian_sigma, initial_learning_rate, decay):
+    def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay):
         can_grow = True
         while can_grow:
-            self.__neurons_training(decay, epochs, input_dataset, initial_learning_rate, initial_gaussian_sigma)
+            self.__neurons_training(decay, epochs, self.__parent_dataset, initial_learning_rate, initial_gaussian_sigma)
 
-            can_grow = self.__can_grow(input_dataset)
+            can_grow = self.__can_grow(self.__parent_dataset)
             if can_grow:
-                self.grow(input_dataset)
+                self.grow(self.__parent_dataset)
 
-        self.__map_data_to_neurons(input_dataset)
+        self.__map_data_to_neurons(self.__parent_dataset)
 
     def __neurons_training(self, decay, epochs, input_dataset, learning_rate, sigma):
         for iteration in range(epochs):
@@ -205,19 +207,13 @@ class GSOM:
         # NOTE: reviewed
         return abs(first_neuron.position[1] - second_neuron.position[1]) == 0
 
-    # def __build_empty_weights_map(self):
-    #     map_size = list(self.__initial_map_size)
-    #     map_size.append(self.__data_size)
-    #     return np.zeros(shape=map_size, dtype=np.float32)
-
     def __build_neurons_list(self):
         rows, cols = self.__initial_map_size
         return {(x, y): self.__build_neuron((x, y)) for x in range(rows) for y in range(cols)}
 
     def __build_neuron(self, weight_position):
         # NOTE: reviewed
-        return Neuron(weight_position, self.weights_map, self.__parent_quantization_error, self.__t2,
-                      self.__growing_metric)
+        return NeuronBuilder.new_neuron(weight_position, self.weights_map)
 
     def __map_shape(self):
         shape = self.weights_map.shape

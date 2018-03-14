@@ -26,7 +26,6 @@ class Neuron:
     def compute_quantization_error(self):
         assert self.input_dataset is not None, "The unit has not been provided with an input dataset"
 
-        # input_dataset = np.asarray(self.input_dataset)
         distance_from_whole_dataset = self.activation(self.input_dataset)
         quantization_error = distance_from_whole_dataset.sum()
 
