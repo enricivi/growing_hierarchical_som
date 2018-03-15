@@ -55,15 +55,6 @@ class GSOM:
             weight /= np.linalg.norm(weight)
             self.weights_map[neuron.position] = weight
 
-        # updating neurons weight
-        map_iter = np.nditer(self.neurons_map, flags=['multi_index', 'refs_ok'])
-        while not map_iter.finished:
-            weight = self.neurons_map[map_iter.multi_index].weight_vector
-            weight += learning_rate * gauss_kernel[map_iter.multi_index] * (data - weight)
-            weight /= np.linalg.norm(weight)
-            self.neurons_map[map_iter.multi_index].weight_vector = weight
-            map_iter.iternext()
-
     def __gaussian_kernel(self, winner_neuron, gaussian_sigma):
         # TODO: kernel area != 1 (multiply kernel and A = 1/[2*pi*(gaussian_sigma**2)] to obtain a unit area). probably it's not necessary
         # computing gaussian kernel
@@ -95,12 +86,12 @@ class GSOM:
         # finding the new association for each neuron
         for data in input_dataset:
             winner = self.winner_neuron(data)
-            winner.input_dataset.append(data)
+            winner.input_dataset = np.vstack(tup=(winner.input_dataset, data))
 
     def __clear_neurons_dataset(self):
         # NOTE: reviewed
         for neuron in self.neurons.values():
-            neuron.input_dataset.clear()
+            neuron.input_dataset = np.empty(shape=(0, neuron.input_dataset.shape[1]), dtype=np.float32)
 
     def __find_error_neuron(self, input_dataset):
         # NOTE: reviewed
@@ -213,7 +204,7 @@ class GSOM:
 
     def __build_neuron(self, weight_position):
         # NOTE: reviewed
-        return NeuronBuilder.new_neuron(weight_position, self.weights_map)
+        return NeuronBuilder.new_neuron(self.weights_map, weight_position)
 
     def __map_shape(self):
         shape = self.weights_map.shape

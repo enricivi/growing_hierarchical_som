@@ -20,9 +20,9 @@ class NeuronBuilder:
         return Neuron(
             weights_map,
             position,
-            NeuronBuilder.instance.instance.zero_quantization_error,
-            NeuronBuilder.instance.instance.tau_2,
-            NeuronBuilder.instance.instance.growing_metric
+            NeuronBuilder.instance.zero_quantization_error,
+            NeuronBuilder.instance.tau_2,
+            NeuronBuilder.instance.growing_metric
         )
 
     @staticmethod
@@ -30,7 +30,7 @@ class NeuronBuilder:
         if NeuronBuilder.instance is None:
             NeuronBuilder.instance = NeuronBuilder.__SingletonNeuronBuilder(tau_2, growing_metric)
 
-        zero_neuron = Neuron(weight_vector, (0, 0), None, None, NeuronBuilder.growing_metric)
+        zero_neuron = Neuron(weight_vector, (0, 0), None, None, NeuronBuilder.instance.growing_metric)
         zero_neuron.input_dataset = input_dataset
 
         NeuronBuilder.instance.set_zero_quantization_error(zero_neuron.compute_quantization_error())

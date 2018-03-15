@@ -15,7 +15,7 @@ class Neuron:
         self.position = weight_vector_position
 
         self.child_map = None
-        self.input_dataset = None
+        self.input_dataset = np.empty(shape=(0, self.__weight_map.shape[2]), dtype=np.float32)
 
     def activation(self, data):
         return np.linalg.norm(np.subtract(data, self.weight_vector()), axis=0)
