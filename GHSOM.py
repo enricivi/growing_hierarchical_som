@@ -25,11 +25,7 @@ class GHSOM:
         map_queue = Queue()
         map_queue.put(zero_unit_child_map)
 
-        level_count = 1
         while not map_queue.empty():
-            print("depth: {}".format(level_count))
-            level_count += 1
-
             gmap = map_queue.get()
             gmap.train(
                 self.__epoch_number,
