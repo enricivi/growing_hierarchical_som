@@ -14,7 +14,7 @@ class GSOM:
         self.__growing_metric = growing_metric
         self.__parent_dataset = parent_dataset
 
-        self.weights_map = weights_map
+        self.weights_map = [weights_map]
 
         self.neurons = self.__build_neurons_list()
 
@@ -53,10 +53,9 @@ class GSOM:
             weight = neuron.weight_vector()
             weight += learning_rate * gauss_kernel[neuron.position] * (data - weight)
             weight /= np.linalg.norm(weight)
-            self.weights_map[neuron.position] = weight
+            self.weights_map[0][neuron.position] = weight
 
     def __gaussian_kernel(self, winner_neuron, gaussian_sigma):
-        # TODO: kernel area != 1 (multiply kernel and A = 1/[2*pi*(gaussian_sigma**2)] to obtain a unit area). probably it's not necessary
         # computing gaussian kernel
         winner_row, winner_col = winner_neuron.position
         s = 2 * gaussian_sigma ** 2
@@ -64,7 +63,7 @@ class GSOM:
         gauss_col = np.power(np.asarray(range(self.__map_shape()[1])) - winner_col, 2) / s
         gauss_row = np.power(np.asarray(range(self.__map_shape()[0])) - winner_row, 2) / s
 
-        return np.exp(-1 * np.outer(gauss_col, gauss_row))
+        return np.exp(-1 * np.outer(gauss_row, gauss_col))
 
     def __can_grow(self, input_dataset):
         # NOTE: reviewed
@@ -124,7 +123,6 @@ class GSOM:
         if self.are_in_same_row(error_neuron, dissimilar_neuron):
             new_neuron_idxs = self.add_column_between(error_neuron, dissimilar_neuron)
             self.__init_new_neurons_weight_vector(new_neuron_idxs, "horizontal")
-
         elif self.are_in_same_column(error_neuron, dissimilar_neuron):
             new_neuron_idxs = self.add_row_between(error_neuron, dissimilar_neuron)
             self.__init_new_neurons_weight_vector(new_neuron_idxs, "vertical")
@@ -139,8 +137,8 @@ class GSOM:
 
         new_line_idx = [(row, new_column_idx) for row in range(self.__map_shape()[0])]
 
-        for row in range(len(new_line_idx)):
-            for col in range(new_column_idx, self.__map_shape()[1]):
+        for col in range(self.__map_shape()[1] - 1, new_column_idx - 1, -1):
+            for row in range(len(new_line_idx)):
                 new_idx = (row, col + 1)
                 neuron = self.neurons.pop((row, col))
                 neuron.position = new_idx
@@ -148,7 +146,7 @@ class GSOM:
 
         line_size = self.__map_shape()[0]
         line = np.zeros(shape=(line_size, self.__data_size), dtype=np.float32)
-        self.weights_map = np.insert(self.weights_map, new_column_idx, line, axis=1)
+        self.weights_map[0] = np.insert(self.weights_map[0], new_column_idx, line, axis=1)
 
         return new_line_idx
 
@@ -160,7 +158,7 @@ class GSOM:
 
         new_line_idx = [(new_row_idx, col) for col in range(self.__map_shape()[1])]
 
-        for row in range(new_row_idx, self.__map_shape()[0]):
+        for row in range(self.__map_shape()[0] - 1, new_row_idx - 1, -1):
             for col in range(len(new_line_idx)):
                 new_idx = (row + 1, col)
                 neuron = self.neurons.pop((row, col))
@@ -169,7 +167,7 @@ class GSOM:
 
         line_size = len(new_line_idx)
         line = np.zeros(shape=(line_size, self.__data_size), dtype=np.float32)
-        self.weights_map = np.insert(self.weights_map, new_row_idx, line, axis=0)
+        self.weights_map[0] = np.insert(self.weights_map[0], new_row_idx, line, axis=0)
 
         return new_line_idx
 
@@ -179,7 +177,7 @@ class GSOM:
             adjacent_neuron_idxs = self.__get_adjacent_neuron_idxs_by_direction(row, col, new_line_direction)
             weight_vector = self.__mean_weight_vector(adjacent_neuron_idxs)
 
-            self.weights_map[row, col] = weight_vector
+            self.weights_map[0][row, col] = weight_vector
             self.neurons[(row, col)] = self.__build_neuron((row, col))
 
     def __mean_weight_vector(self, neuron_idxs):
@@ -225,5 +223,5 @@ class GSOM:
         return NeuronBuilder.new_neuron(self.weights_map, weight_position)
 
     def __map_shape(self):
-        shape = self.weights_map.shape
+        shape = self.weights_map[0].shape
         return shape[0], shape[1]

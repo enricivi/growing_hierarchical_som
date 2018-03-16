@@ -20,10 +20,9 @@ class GHSOM:
 
     def __call__(self, input_dataset, *args, **kwargs):
         zero_unit = self.__init_zero_unit(input_dataset)
-        zero_unit_child_map = zero_unit.child_map
 
         map_queue = Queue()
-        map_queue.put(zero_unit_child_map)
+        map_queue.put(zero_unit.child_map)
 
         while not map_queue.empty():
             gmap = map_queue.get()
@@ -33,6 +32,7 @@ class GHSOM:
                 self.__learning_rate,
                 self.__decay
             )
+            map_queue.task_done()
 
             neurons_to_expand = filter(lambda _neuron: _neuron.needs_child_map(), gmap.neurons.values())
             for neuron in neurons_to_expand:
@@ -43,7 +43,7 @@ class GHSOM:
                     self.__t2,
                     self.__growing_metric,
                     input_dataset.shape[1],
-                    self.__new_map_weights(neuron.position, gmap.weights_map, input_dataset.shape[1]),
+                    self.__new_map_weights(neuron.position, gmap.weights_map[0], input_dataset.shape[1]),
                     neuron.input_dataset
                 )
 
@@ -53,7 +53,7 @@ class GHSOM:
 
     def __init_zero_unit(self, input_dataset):
         zero_unit = NeuronBuilder.zero_neuron(
-            np.reshape(self.__calc_input_mean(input_dataset), newshape=(1, 1, input_dataset.shape[1])),
+            [np.reshape(self.__calc_input_mean(input_dataset), newshape=(1, 1, input_dataset.shape[1]))],
             input_dataset,
             self.__t2,
             self.__growing_metric
