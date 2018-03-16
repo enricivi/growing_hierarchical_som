@@ -99,7 +99,8 @@ class GHSOM:
 
     @staticmethod
     def __calc_input_mean(input_dataset):
-        return input_dataset.mean(axis=0)
+        mean_vector = input_dataset.mean(axis=0)
+        return mean_vector / np.linalg.norm(mean_vector)
 
     @staticmethod
     def __calc_initial_random_weights(input_dataset):
