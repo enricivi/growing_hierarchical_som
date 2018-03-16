@@ -1,197 +1,211 @@
-from neuron import Neuron
+from neuron import NeuronBuilder
 import numpy as np
 
 
 class GSOM:
-    def __init__(self, initial_map_size, parent_quantization_error, t1, t2, growing_metric, weights_vectors_dict=None):
+    def __init__(self, initial_map_size, parent_quantization_error, t1, t2, growing_metric, data_size,
+                 weights_map, parent_dataset):
+        assert parent_dataset is not None, "Provided dataset is empty"
+        self.__data_size = data_size
         self.__t1 = t1
         self.__t2 = t2
         self.__parent_quantization_error = parent_quantization_error
-        self.__init_map_size = initial_map_size
+        self.__initial_map_size = initial_map_size
         self.__growing_metric = growing_metric
+        self.__parent_dataset = parent_dataset
 
-        # i'm not so sure...
-        self.neurons_map = np.asarray(
-            a=[[None for _ in range(initial_map_size[0])] for _ in range(initial_map_size[1])],
-            dtype=object
-        )
-        if weights_vectors_dict is not None:
-            for position, weight in weights_vectors_dict.items():
-                self.neurons_map[position] = Neuron(weight, self.__parent_quantization_error, self.__t2, growing_metric)
+        self.weights_map = weights_map
 
-    def winner_idx(self, data):
-        activations = np.empty(shape=self.neurons_map.shape, dtype=np.float32)
+        self.neurons = self.__build_neurons_list()
 
-        activations_iter = np.nditer(activations, flags=['multi_index'])
-        while not activations_iter.finished:
-            activations[activations_iter.multi_index] = self.neurons_map[activations_iter.multi_index].activation(data)
-            activations_iter.iternext()
+    def winner_neuron(self, data):
+        # NOTE: reviewed
+        activations = list()
+        for neuron in self.neurons.values():
+            activations.append(neuron.activation(data))
 
-        return np.unravel_index(activations.min(), dims=activations.shape)
+        idx = np.unravel_index(np.argmin(activations), dims=self.__map_shape())
+        return self.neurons[idx]
 
-    def train(self, input_dataset, epochs, learning_rate, decay, gaussian_sigma):
-        lr = learning_rate
-        sigma = gaussian_sigma
-        can_grow = self.__can_grow(input_dataset)
-        iter = 1
+    def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay):
+        can_grow = True
         while can_grow:
-            # updating weights
+            self.__neurons_training(decay, epochs, self.__parent_dataset, initial_learning_rate, initial_gaussian_sigma)
+
+            can_grow = self.__can_grow(self.__parent_dataset)
+            if can_grow:
+                self.grow(self.__parent_dataset)
+
+        self.__map_data_to_neurons(self.__parent_dataset)
+
+    def __neurons_training(self, decay, epochs, input_dataset, learning_rate, sigma):
+        for iteration in range(epochs):
             data = input_dataset[np.random.randint(len(input_dataset))]
-            gauss_kernel = self.__gaussian_kernel(self.winner_idx(data), sigma)
-            self.__update_neurons(data, gauss_kernel, lr)
-            # updating lr and sigma
-            lr *= decay
+            self.__update_neurons(data, learning_rate, sigma)
+
+            learning_rate *= decay
             sigma *= decay
-            # updating map dimensions
-            if (iter % epochs) == 0:
-                can_grow = self.__can_grow(input_dataset)
-                if can_grow:
-                    self.grow()
-                lr = learning_rate
-                sigma = gaussian_sigma
-            iter += 1
 
-        neurons_to_expand = list()
-        self.__map_data_to_neurons(input_dataset)
-        map_iter = np.nditer(self.neurons_map, flags=['multi_index'])
-        while not map_iter.finished:
-            if self.neurons_map[map_iter.multi_index].needs_child_map():
-                neurons_to_expand.append(map_iter.multi_index)
-            map_iter.iternext()
-        for neuron_pos in neurons_to_expand:
-            self.neurons_map[neuron_pos].child_map = GSOM(
-                self.__init_map_size,
-                self.neurons_map[neuron_pos].compute_quantization_error(),
-                self.__t1,
-                self.__t2,
-                self.__growing_metric,
-                self.__init_new_map(neuron_pos)
-            )
-            self.neurons_map[neuron_pos].child_map.train(
-                np.asarray(self.neurons_map[neuron_pos].input_dataset),
-                epochs, learning_rate, decay, gaussian_sigma
-            )
+    def __update_neurons(self, data, learning_rate, sigma):
+        gauss_kernel = self.__gaussian_kernel(self.winner_neuron(data), sigma)
 
-    def __update_neurons(self, data, gaussian_kernel, learning_rate):
-        # updating neurons weight
-        map_iter = np.nditer(self.neurons_map, flags=['multi_index'])
-        while not map_iter.finished:
-            weight = self.neurons_map[map_iter.multi_index].__weight_vector
-            weight += learning_rate * gaussian_kernel[map_iter.multi_index] * (data - weight)
+        for neuron in self.neurons.values():
+            weight = neuron.weight_vector()
+            weight += learning_rate * gauss_kernel[neuron.position] * (data - weight)
             weight /= np.linalg.norm(weight)
-            self.neurons_map[map_iter.multi_index].__weight_vector = weight
-            map_iter.iternext()
+            self.weights_map[neuron.position] = weight
 
     def __gaussian_kernel(self, winner_neuron, gaussian_sigma):
         # TODO: kernel area != 1 (multiply kernel and A = 1/[2*pi*(gaussian_sigma**2)] to obtain a unit area). probably it's not necessary
         # computing gaussian kernel
-        s = 2 * (gaussian_sigma) ** 2
-        gauss_y = np.power(np.asarray(range(self.neurons_map.shape[0])) - winner_neuron[0], 2) / s
-        gauss_x = np.power(np.asarray(range(self.neurons_map.shape[1])) - winner_neuron[1], 2) / s
-        return np.exp(-1 * np.outer(gauss_x, gauss_y))
+        winner_row, winner_col = winner_neuron.position
+        s = 2 * gaussian_sigma ** 2
+
+        gauss_col = np.power(np.asarray(range(self.__map_shape()[1])) - winner_col, 2) / s
+        gauss_row = np.power(np.asarray(range(self.__map_shape()[0])) - winner_row, 2) / s
+
+        return np.exp(-1 * np.outer(gauss_col, gauss_row))
 
     def __can_grow(self, input_dataset):
+        # NOTE: reviewed
+        self.__map_data_to_neurons(input_dataset)
+
         MQE = 0.0
         mapped_neurons = 0
-
-        self.__map_data_to_neurons(input_dataset)
-        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
-        while not neuron_iter.finished:
-            neuron = self.neurons_map[neuron_iter.multi_index]
-            if len(neuron.input_dataset) != 0:
+        for neuron in self.neurons.values():
+            if neuron.input_dataset is not None:
                 MQE += neuron.compute_quantization_error()
                 mapped_neurons += 1
-            neuron_iter.iternext()
 
         return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
 
     def __map_data_to_neurons(self, input_dataset):
-        # reset previous mapping
-        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
-        while not neuron_iter.finished:
-            self.neurons_map[neuron_iter.multi_index].input_dataset.clear()
-            neuron_iter.iternext()
+        # NOTE: reviewed
+        self.__clear_neurons_dataset()
+
         # finding the new association for each neuron
         for data in input_dataset:
-            winner = self.winner_idx(data)
-            self.neurons_map[winner].input_dataset.append(data)
+            winner = self.winner_neuron(data)
+            winner.input_dataset = np.vstack(tup=(winner.input_dataset, data))
+
+    def __clear_neurons_dataset(self):
+        # NOTE: reviewed
+        for neuron in self.neurons.values():
+            neuron.input_dataset = np.empty(shape=(0, neuron.input_dataset.shape[1]), dtype=np.float32)
 
     def __find_error_neuron(self, input_dataset):
+        # NOTE: reviewed
         self.__map_data_to_neurons(input_dataset)
 
-        quantization_errors_map = np.zeros(shape=self.neurons_map.shape, dtype=np.float32)
-        qem_iter = np.nditer(quantization_errors_map, flags=['multi_index'])
-        while not qem_iter.finished:
-            neuron = self.neurons_map[qem_iter.multi_index]
-            if len(neuron.input_dataset) != 0:
-                quantization_errors_map[qem_iter.multi_index] += neuron.compute_quantization_error()
-            qem_iter.iternext()
+        quantization_errors = list()
+        for neuron in self.neurons.values():
+            quantization_error = -np.inf
+            if neuron.input_dataset is not None:
+                quantization_error = neuron.compute_quantization_error()
+            quantization_errors.append(quantization_error)
 
-        return np.unravel_index(quantization_errors_map.max(), dims=quantization_errors_map.shape)
+        idx = np.unravel_index(np.argmax(quantization_errors), dims=self.__map_shape())
+        return self.neurons[idx]
 
-    def find_most_dissimilar_unit(self, error_unit_position):
-        weight_distances_map = np.zeros(shape=self.neurons_map.shape, dtype=np.float32)
+    def __find_most_dissimilar_neuron(self, error_neuron):
+        # NOTE: reviewed
+        weight_distances = dict()
+        for neuron in self.neurons.values():
+            if self.are_neurons_neighbours(error_neuron, neuron):
+                weight_distances[neuron] = error_neuron.weight_distance_from_other_unit(neuron)
 
-        error_neuron = self.neurons_map[error_unit_position]
-        neuron_iter = np.nditer(self.neurons_map, flags=['multi_index'])
-        while not neuron_iter.finished:
-            if np.linalg.norm(error_unit_position - neuron_iter.multi_index, ord=1) == 1:
-                neighbour = self.neurons_map[neuron_iter.multi_index]
-                weight_distances_map[neuron_iter.multi_index] = error_neuron.weight_distance_from_other_unit(neighbour)
-            neuron_iter.iternext()
+        return max(weight_distances, key=weight_distances.get)
 
-        return np.unravel_index(weight_distances_map.max(), dims=weight_distances_map.shape)
+    def grow(self, input_dataset):
+        # NOTE: reviewed
+        error_neuron = self.__find_error_neuron(input_dataset)
+        dissimilar_neuron = self.__find_most_dissimilar_neuron(error_neuron)
 
-    def __init_new_map(self, parent_position):
-        """
-         ______ ______ ______
-        |      |      |      |         child (2x2)
-        | pnfp |      |      |          ______ ______
-        |______|______|______|         |      |      |
-        |      |      |      |         |(0,0) |(0,1) |
-        |      |parent|      |  ---->  |______|______|
-        |______|______|______|         |      |      |
-        |      |      |      |         |(1,0) |(1,1) |
-        |      |      |      |         |______|______|
-        |______|______|______|
+        if self.are_in_same_row(error_neuron, dissimilar_neuron):
+            new_neuron_idxs = self.add_column_between(error_neuron, dissimilar_neuron)
+            self.__init_new_neurons_weight_vector(new_neuron_idxs, "horizontal")
 
-        """
-        # TODO: this method must be generalized
-        parent_neighbourhood_first_position = (parent_position[0]-1, parent_position[1]-1)
-        weights = dict()
-        for idx in range(4):
-            position = np.unravel_index(idx, dims=(2, 2))
-            __pos = (
-                parent_neighbourhood_first_position[0] + position[0],
-                parent_neighbourhood_first_position[1] + position[1]
-            )
+        elif self.are_in_same_column(error_neuron, dissimilar_neuron):
+            new_neuron_idxs = self.add_row_between(error_neuron, dissimilar_neuron)
+            self.__init_new_neurons_weight_vector(new_neuron_idxs, "vertical")
+        else:
+            raise RuntimeError("Error neuron and the most dissimilar are not adjacent")
 
-            weight = np.zeros(shape=self.neurons_map[parent_position].__weight_vector.shape, dtype=np.float32)
-            for inner_idx in range(4):
-                inner_pos = np.unravel_index(idx, dims=(2, 2))
-                inner_pos = (__pos[0] + inner_pos[0], __pos[1] + inner_pos[1])
-                if (inner_pos[0] >= 0) and (inner_pos[1] >= 0):
-                    if (inner_pos[0] < self.neurons_map.shape[0]) and (inner_pos[1] < self.neurons_map.shape[1]):
-                        weight += ( 0.25 * self.neurons_map[inner_pos] )
+    def add_column_between(self, error_neuron, dissimilar_neuron):
+        # NOTE: reviewed
+        error_col = error_neuron.position[1]
+        dissimilar_col = dissimilar_neuron.position[1]
+        new_column_idx = max(error_col, dissimilar_col)
 
-            weights[position] = weight / np.linalg.norm(weight)
+        line_size = self.__map_shape()[0]
+        line = np.zeros(shape=line_size, dtype=np.float32)
+        self.weights_map = np.insert(self.weights_map, new_column_idx, line, axis=1)
 
-        return weights
+        return np.transpose(np.where(self.weights_map == 0))
 
-    def grow(self):
-        raise NotImplementedError
+    def add_row_between(self, error_neuron, dissimilar_neuron):
+        # NOTE: reviewed
+        error_row = error_neuron.position[0]
+        dissimilar_row = dissimilar_neuron.position[0]
+        new_row_idx = max(error_row, dissimilar_row)
 
-    def expand_column(self, error_unit_column_idx, dissimilar_unit_column_idx):
-        raise NotImplementedError
+        line_size = self.__map_shape()[1]
+        line = np.zeros(shape=line_size, dtype=np.float32)
+        self.weights_map = np.insert(self.weights_map, new_row_idx, line, axis=0)
 
-    def expand_row(self, error_unit_row_idx, dissimilar_unit_row_idx):
-        raise NotImplementedError
+        return np.transpose(np.where(self.weights_map == 0))
 
-    def adjacent_units_direction(self, unit1, unit2):
-        # returns horizontal or vertical
-        raise NotImplementedError
+    def __init_new_neurons_weight_vector(self, new_neuron_idxs, new_line_direction):
+        # NOTE: reviewed
+        for row, col in new_neuron_idxs:
+            adjacent_neuron_idxs = self.__get_adjacent_neuron_idxs_by_direction(row, col, new_line_direction)
+            weight_vector = self.__mean_weight_vector(adjacent_neuron_idxs)
 
-    def init_new_unit_weight_vector(self, unit_idx):
-        # the new units weight vector are initialized
-        # as the average of their corresponding neighbors.
-        raise NotImplementedError
+            self.weights_map[row, col] = weight_vector
+            self.neurons[(row, col)] = self.__build_neuron((row, col))
+
+    def __mean_weight_vector(self, neuron_idxs):
+        # NOTE: reviewed
+        weight_vector = np.zeros(shape=self.__data_size, dtype=np.float32)
+        for adjacent_idx in neuron_idxs:
+            weight_vector += 0.5 * self.neurons[adjacent_idx].weight_vector()
+        return weight_vector / np.linalg.norm(weight_vector)
+
+    @staticmethod
+    def __get_adjacent_neuron_idxs_by_direction(row, col, direction):
+        # NOTE: reviewed
+        adjacent_neuron_idxs = list()
+        if direction == "vertical":
+            adjacent_neuron_idxs = [(row, col - 1), (row, col + 1)]
+
+        elif direction == "horizontal":
+            adjacent_neuron_idxs = [(row - 1, col), (row + 1, col)]
+
+        return adjacent_neuron_idxs
+
+    @staticmethod
+    def are_neurons_neighbours(first_neuron, second_neuron):
+        # NOTE: reviewed
+        return np.linalg.norm(np.asarray(first_neuron.position) - np.asarray(second_neuron.position), ord=1) == 1
+
+    @staticmethod
+    def are_in_same_row(first_neuron, second_neuron):
+        # NOTE: reviewed
+        return abs(first_neuron.position[0] - second_neuron.position[0]) == 0
+
+    @staticmethod
+    def are_in_same_column(first_neuron, second_neuron):
+        # NOTE: reviewed
+        return abs(first_neuron.position[1] - second_neuron.position[1]) == 0
+
+    def __build_neurons_list(self):
+        rows, cols = self.__initial_map_size
+        return {(x, y): self.__build_neuron((x, y)) for x in range(rows) for y in range(cols)}
+
+    def __build_neuron(self, weight_position):
+        # NOTE: reviewed
+        return NeuronBuilder.new_neuron(self.weights_map, weight_position)
+
+    def __map_shape(self):
+        shape = self.weights_map.shape
+        return shape[0], shape[1]
