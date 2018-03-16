@@ -35,7 +35,7 @@ class Neuron:
         return quantization_error
 
     def weight_distance_from_other_unit(self, unit):
-        return np.linalg.norm(self.weight_vector() - unit.weight_vector)
+        return np.linalg.norm(self.weight_vector() - unit.weight_vector())
 
     def weight_vector(self):
         return self.__weight_map[self.position]

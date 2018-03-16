@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.datasets import load_digits
 from time import time
-import matplotlib.pyplot as plt
 from GHSOM import GHSOM
 
 
@@ -22,7 +21,7 @@ print("dataset length: {}".format(n_samples))
 print("features per example: {}".format(n_features))
 print("number of digits: {}\n".format(n_digits))
 
-ghsom = GHSOM(t1=1, t2=1, learning_rate=0.5, decay=0.99, gaussian_sigma=1, epoch_number=5)
+ghsom = GHSOM(t1=0.035, t2=0.0035, learning_rate=0.5, decay=0.99, gaussian_sigma=1, epoch_number=5)
 
 #print("Normalizing dataset...")
 #normalize_dataset(data)
