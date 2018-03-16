@@ -175,10 +175,10 @@ class GSOM:
     def __get_adjacent_neuron_idxs_by_direction(row, col, direction):
         # NOTE: reviewed
         adjacent_neuron_idxs = list()
-        if direction == "vertical":
+        if direction == "horizontal":
             adjacent_neuron_idxs = [(row, col - 1), (row, col + 1)]
 
-        elif direction == "horizontal":
+        elif direction == "vertical":
             adjacent_neuron_idxs = [(row - 1, col), (row + 1, col)]
 
         return adjacent_neuron_idxs
