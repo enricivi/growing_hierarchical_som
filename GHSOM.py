@@ -5,8 +5,7 @@ from queue import Queue
 
 
 class GHSOM:
-    def __init__(self, t1, t2, learning_rate, decay, gaussian_sigma, epoch_number=5,
-                 growing_metric="qe"):
+    def __init__(self, t1, t2, learning_rate, decay, gaussian_sigma, epoch_number=5, growing_metric="qe"):
         """
         :type epoch_number: The lambda parameter; controls the number of iteration between growing checks
         """
@@ -40,8 +39,6 @@ class GHSOM:
                     (2, 2),
                     neuron.compute_quantization_error(),
                     self.__t1,
-                    self.__t2,
-                    self.__growing_metric,
                     input_dataset.shape[1],
                     self.__new_map_weights(neuron.position, gmap.weights_map[0], input_dataset.shape[1]),
                     neuron.input_dataset
@@ -63,8 +60,6 @@ class GHSOM:
             (2, 2),
             NeuronBuilder.get_zero_quantization_error(),
             self.__t1,
-            self.__t2,
-            self.__growing_metric,
             input_dataset.shape[1],
             self.__calc_initial_random_weights(input_dataset),
             zero_unit.input_dataset

@@ -3,15 +3,12 @@ import numpy as np
 
 
 class GSOM:
-    def __init__(self, initial_map_size, parent_quantization_error, t1, t2, growing_metric, data_size,
-                 weights_map, parent_dataset):
+    def __init__(self, initial_map_size, parent_quantization_error, t1, data_size, weights_map, parent_dataset):
         assert parent_dataset is not None, "Provided dataset is empty"
         self.__data_size = data_size
         self.__t1 = t1
-        self.__t2 = t2
         self.__parent_quantization_error = parent_quantization_error
         self.__initial_map_size = initial_map_size
-        self.__growing_metric = growing_metric
         self.__parent_dataset = parent_dataset
 
         self.weights_map = [weights_map]
