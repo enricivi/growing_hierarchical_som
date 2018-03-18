@@ -4,6 +4,7 @@ from time import time
 from GHSOM import GHSOM
 
 from ghsom_explorer import explore
+from ghsom_explorer import plot
 
 
 def normalize_dataset(dataset):
@@ -35,3 +36,4 @@ print("Elapsed time is {:.2f} seconds\n".format(time() - start))
 
 map_per_level = dict()
 explore(zu, map_per_level)
+plot(map_per_level, level=1)
