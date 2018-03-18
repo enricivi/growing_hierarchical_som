@@ -3,7 +3,8 @@ import numpy as np
 
 
 class GSOM:
-    def __init__(self, initial_map_size, parent_quantization_error, t1, data_size, weights_map, parent_dataset):
+    def __init__(self, initial_map_size, parent_quantization_error, t1, data_size, weights_map, parent_dataset, neuron_builder):
+        self.__neuron_builder = neuron_builder
         assert parent_dataset is not None, "Provided dataset is empty"
         self.__data_size = data_size
         self.__t1 = t1
@@ -217,7 +218,7 @@ class GSOM:
 
     def __build_neuron(self, weight_position):
         # NOTE: reviewed
-        return NeuronBuilder.new_neuron(self.weights_map, weight_position)
+        return self.__neuron_builder.new_neuron(self.weights_map, weight_position)
 
     def __map_shape(self):
         shape = self.weights_map[0].shape

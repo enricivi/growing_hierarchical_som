@@ -9,13 +9,13 @@ class GHSOM:
         """
         :type epoch_number: The lambda parameter; controls the number of iteration between growing checks
         """
-        self.__growing_metric = growing_metric
         self.__gaussian_sigma = gaussian_sigma
         self.__decay = decay
         self.__learning_rate = learning_rate
-        self.__t2 = t2
         self.__t1 = t1
         self.__epoch_number = epoch_number
+
+        self.__neuron_builder = NeuronBuilder(t2, growing_metric)
 
     def __call__(self, input_dataset, *args, **kwargs):
         zero_unit = self.__init_zero_unit(input_dataset)
@@ -41,7 +41,8 @@ class GHSOM:
                     self.__t1,
                     input_dataset.shape[1],
                     self.__new_map_weights(neuron.position, gmap.weights_map[0], input_dataset.shape[1]),
-                    neuron.input_dataset
+                    neuron.input_dataset,
+                    self.__neuron_builder
                 )
 
                 map_queue.put(neuron.child_map)
@@ -49,20 +50,16 @@ class GHSOM:
         return zero_unit
 
     def __init_zero_unit(self, input_dataset):
-        zero_unit = NeuronBuilder.zero_neuron(
-            self.__calc_input_mean(input_dataset),
-            input_dataset,
-            self.__t2,
-            self.__growing_metric
-        )
+        zero_unit = self.__neuron_builder.zero_neuron(input_dataset)
 
         zero_unit.child_map = GSOM(
             (2, 2),
-            NeuronBuilder.get_zero_quantization_error(),
+            self.__neuron_builder.zero_quantization_error,
             self.__t1,
             input_dataset.shape[1],
             self.__calc_initial_random_weights(input_dataset),
-            zero_unit.input_dataset
+            zero_unit.input_dataset,
+            self.__neuron_builder
         )
 
         return zero_unit
@@ -91,11 +88,6 @@ class GHSOM:
             child_weights[child_position] = weight
 
         return child_weights
-
-    @staticmethod
-    def __calc_input_mean(input_dataset):
-        mean_vector = input_dataset.mean(axis=0)
-        return mean_vector / np.linalg.norm(mean_vector)
 
     @staticmethod
     def __calc_initial_random_weights(input_dataset):
