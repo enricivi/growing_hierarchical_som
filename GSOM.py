@@ -96,7 +96,7 @@ class GSOM:
         quantization_errors = list()
         for neuron in self.neurons.values():
             quantization_error = -np.inf
-            if neuron.input_dataset is not None:
+            if neuron.input_dataset.shape[0] != 0:
                 quantization_error = neuron.compute_quantization_error()
             quantization_errors.append(quantization_error)
 
