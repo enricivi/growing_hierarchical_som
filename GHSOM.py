@@ -22,7 +22,7 @@ class GHSOM:
         self.__neuron_builder = NeuronBuilder(t2, growing_metric)
 
     def __call__(self, *args, **kwargs):
-        zero_unit = self.__init_zero_unit(input_dataset)
+        zero_unit = self.__init_zero_unit()
 
         map_queue = Queue()
         map_queue.put(zero_unit.child_map)
@@ -39,34 +39,38 @@ class GHSOM:
 
             neurons_to_expand = filter(lambda _neuron: _neuron.needs_child_map(), gmap.neurons.values())
             for neuron in neurons_to_expand:
-                neuron.child_map = GSOM(
-                    (2, 2),
+                neuron.child_map = self.__build_new_GSOM(
                     neuron.compute_quantization_error(),
-                    self.__t1,
-                    input_dataset.shape[1],
-                    self.__new_map_weights(neuron.position, gmap.weights_map[0], input_dataset.shape[1]),
                     neuron.input_dataset,
-                    self.__neuron_builder
+                    self.__new_map_weights(neuron.position, gmap.weights_map[0], self.__input_dimension)
                 )
 
                 map_queue.put(neuron.child_map)
 
         return zero_unit
 
-    def __init_zero_unit(self, input_dataset):
-        zero_unit = self.__neuron_builder.zero_neuron(input_dataset)
+    def __init_zero_unit(self):
+        zero_unit = self.__neuron_builder.zero_neuron(self.__input_dataset)
 
-        zero_unit.child_map = GSOM(
-            (2, 2),
+        zero_unit.child_map = self.__build_new_GSOM(
             self.__neuron_builder.zero_quantization_error,
-            self.__t1,
-            input_dataset.shape[1],
-            self.__calc_initial_random_weights(input_dataset),
             zero_unit.input_dataset,
-            self.__neuron_builder
+            self.__calc_initial_random_weights(self.__input_dataset)
         )
 
         return zero_unit
+
+    # noinspection PyPep8Naming
+    def __build_new_GSOM(self, parent_quantization_error, parent_dataset, weights_map):
+        return GSOM(
+            (2, 2),
+            parent_quantization_error,
+            self.__t1,
+            self.__input_dimension,
+            weights_map,
+            parent_dataset,
+            self.__neuron_builder
+        )
 
     def __new_map_weights(self, parent_position, weights_map, features_length):
         """
