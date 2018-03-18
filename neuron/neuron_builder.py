@@ -30,7 +30,8 @@ class NeuronBuilder:
         if NeuronBuilder.instance is None:
             NeuronBuilder.instance = NeuronBuilder.__SingletonNeuronBuilder(tau_2, growing_metric)
 
-        zero_neuron = Neuron(weight_vector, (0, 0), None, None, NeuronBuilder.instance.growing_metric)
+        zero_neuron = Neuron([weight_vector.reshape(1, 1, input_dataset.shape[1])], (0, 0), None, None,
+                             NeuronBuilder.instance.growing_metric)
         zero_neuron.input_dataset = input_dataset
 
         NeuronBuilder.instance.set_zero_quantization_error(zero_neuron.compute_quantization_error())

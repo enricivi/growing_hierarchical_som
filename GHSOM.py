@@ -50,7 +50,7 @@ class GHSOM:
 
     def __init_zero_unit(self, input_dataset):
         zero_unit = NeuronBuilder.zero_neuron(
-            [np.reshape(self.__calc_input_mean(input_dataset), newshape=(1, 1, input_dataset.shape[1]))],
+            self.__calc_input_mean(input_dataset),
             input_dataset,
             self.__t2,
             self.__growing_metric
