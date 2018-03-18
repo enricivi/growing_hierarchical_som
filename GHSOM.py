@@ -42,7 +42,7 @@ class GHSOM:
                 neuron.child_map = self.__build_new_GSOM(
                     neuron.compute_quantization_error(),
                     neuron.input_dataset,
-                    self.__new_map_weights(neuron.position, gmap.weights_map[0], self.__input_dimension)
+                    self.__new_map_weights(neuron.position, gmap.weights_map[0])
                 )
 
                 map_queue.put(neuron.child_map)
@@ -72,7 +72,7 @@ class GHSOM:
             self.__neuron_builder
         )
 
-    def __new_map_weights(self, parent_position, weights_map, features_length):
+    def __new_map_weights(self, parent_position, weights_map):
         """
          ______ ______ ______
         |      |      |      |         child (2x2)
@@ -86,16 +86,25 @@ class GHSOM:
         |______|______|______|
         """
 
-        child_weights = np.zeros(shape=(2, 2, features_length))
+        child_weights = np.zeros(shape=(2, 2, self.__input_dimension))
         stencil = self.__generate_kernel_stencil(parent_position)
         for child_position in np.ndindex(2, 2):
-            mask = np.asarray([s for s in stencil if self.__check_position(s, weights_map.shape)])
-            weight = np.mean(weights_map[mask[:, 0], mask[:, 1]], axis=0)
+            child_position = np.asarray(child_position)
+            mask = self.__filter_out_of_bound_positions(child_position, stencil, weights_map.shape)
+
+            weight = np.mean(self.__elements_from_positions_list(weights_map, mask), axis=0)
             weight /= np.linalg.norm(weight)
 
             child_weights[child_position] = weight
 
         return child_weights
+
+    @staticmethod
+    def __elements_from_positions_list(matrix, positions_list):
+        return matrix[positions_list[:, 0], positions_list[:, 1]]
+
+    def __filter_out_of_bound_positions(self, child_position, stencil, map_shape):
+        return np.asarray(list(filter(lambda pos: self.__check_position(pos, map_shape), stencil + child_position)))
 
     @staticmethod
     def __calc_initial_random_weights(input_dataset):
