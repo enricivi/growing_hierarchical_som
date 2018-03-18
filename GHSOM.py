@@ -5,19 +5,23 @@ from queue import Queue
 
 
 class GHSOM:
-    def __init__(self, t1, t2, learning_rate, decay, gaussian_sigma, epoch_number=5, growing_metric="qe"):
+    def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, epoch_number=5, growing_metric="qe"):
         """
         :type epoch_number: The lambda parameter; controls the number of iteration between growing checks
         """
+        self.__input_dataset = input_dataset
+        self.__input_dimension = input_dataset.shape[1]
+
         self.__gaussian_sigma = gaussian_sigma
         self.__decay = decay
         self.__learning_rate = learning_rate
+
         self.__t1 = t1
         self.__epoch_number = epoch_number
 
         self.__neuron_builder = NeuronBuilder(t2, growing_metric)
 
-    def __call__(self, input_dataset, *args, **kwargs):
+    def __call__(self, *args, **kwargs):
         zero_unit = self.__init_zero_unit(input_dataset)
 
         map_queue = Queue()
