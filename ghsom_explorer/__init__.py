@@ -1,0 +1,1 @@
+from ghsom_explorer.ghsom_explorer import explore

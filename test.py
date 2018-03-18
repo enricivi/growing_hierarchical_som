@@ -3,6 +3,8 @@ from sklearn.datasets import load_digits
 from time import time
 from GHSOM import GHSOM
 
+from ghsom_explorer import explore
+
 
 def normalize_dataset(dataset):
     for idx, data in enumerate(dataset):
@@ -29,6 +31,7 @@ ghsom = GHSOM(t1=5*0.035, t2=50*0.0035, learning_rate=0.5, decay=0.99, gaussian_
 print("Training...")
 start = time()
 zu = ghsom(input_dataset=data)
-print("Elapsed time is {:.2f} seconds".format(time() - start))
+print("Elapsed time is {:.2f} seconds\n".format(time() - start))
 
-print("\n{}".format(len(zu.input_dataset)))
+map_per_level = dict()
+explore(zu, map_per_level)
