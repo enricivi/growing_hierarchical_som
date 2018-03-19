@@ -73,7 +73,7 @@ class GSOM:
         MQE = 0.0
         mapped_neurons = 0
         for neuron in self.neurons.values():
-            if neuron.input_dataset.shape[0] != 0:
+            if neuron.has_dataset():
                 MQE += neuron.compute_quantization_error()
                 mapped_neurons += 1
 
@@ -86,12 +86,12 @@ class GSOM:
         # finding the new association for each neuron
         for data in self.__parent_dataset:
             winner = self.winner_neuron(data)
-            winner.input_dataset = np.vstack(tup=(winner.input_dataset, data))
+            winner.append_data(data)
 
     def __clear_neurons_dataset(self):
         # NOTE: reviewed
         for neuron in self.neurons.values():
-            neuron.input_dataset = np.empty(shape=(0, neuron.input_dataset.shape[1]), dtype=np.float32)
+            neuron.clear_dataset()
 
     def __find_error_neuron(self,):
         # NOTE: reviewed
@@ -100,7 +100,7 @@ class GSOM:
         quantization_errors = list()
         for neuron in self.neurons.values():
             quantization_error = -np.inf
-            if neuron.input_dataset.shape[0] != 0:
+            if neuron.has_dataset():
                 quantization_error = neuron.compute_quantization_error()
             quantization_errors.append(quantization_error)
 
