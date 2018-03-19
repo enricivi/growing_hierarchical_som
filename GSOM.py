@@ -136,17 +136,18 @@ class GSOM:
         dissimilar_col = dissimilar_neuron.position[1]
         new_column_idx = max(error_col, dissimilar_col)
 
-        new_line_idx = [(row, new_column_idx) for row in range(self.__map_shape()[0])]
+        map_rows, map_cols = self.__map_shape()
 
-        for col in range(self.__map_shape()[1] - 1, new_column_idx - 1, -1):
-            for row in range(len(new_line_idx)):
+        new_line_idx = [(row, new_column_idx) for row in range(map_rows)]
+
+        for row in range(map_rows):
+            for col in reversed(range(new_column_idx, map_cols)):
                 new_idx = (row, col + 1)
                 neuron = self.neurons.pop((row, col))
                 neuron.position = new_idx
                 self.neurons[new_idx] = neuron
 
-        line_size = self.__map_shape()[0]
-        line = np.zeros(shape=(line_size, self.__data_size), dtype=np.float32)
+        line = np.zeros(shape=(map_rows, self.__data_size), dtype=np.float32)
         self.weights_map[0] = np.insert(self.weights_map[0], new_column_idx, line, axis=1)
 
         return new_line_idx
@@ -157,17 +158,18 @@ class GSOM:
         dissimilar_row = dissimilar_neuron.position[0]
         new_row_idx = max(error_row, dissimilar_row)
 
-        new_line_idx = [(new_row_idx, col) for col in range(self.__map_shape()[1])]
+        map_rows, map_cols = self.__map_shape()
 
-        for row in range(self.__map_shape()[0] - 1, new_row_idx - 1, -1):
-            for col in range(len(new_line_idx)):
+        new_line_idx = [(new_row_idx, col) for col in range(map_cols)]
+
+        for row in reversed(range(new_row_idx, map_rows)):
+            for col in range(map_cols):
                 new_idx = (row + 1, col)
                 neuron = self.neurons.pop((row, col))
                 neuron.position = new_idx
                 self.neurons[new_idx] = neuron
 
-        line_size = len(new_line_idx)
-        line = np.zeros(shape=(line_size, self.__data_size), dtype=np.float32)
+        line = np.zeros(shape=(map_cols, self.__data_size), dtype=np.float32)
         self.weights_map[0] = np.insert(self.weights_map[0], new_row_idx, line, axis=0)
 
         return new_line_idx
