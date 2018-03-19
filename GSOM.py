@@ -29,19 +29,19 @@ class GSOM:
     def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay):
         can_grow = True
         while can_grow:
-            self.__neurons_training(decay, epochs, self.__parent_dataset, initial_learning_rate, initial_gaussian_sigma)
+            self.__neurons_training(decay, epochs, initial_learning_rate, initial_gaussian_sigma)
 
-            can_grow = self.__can_grow(self.__parent_dataset)
+            can_grow = self.__can_grow()
             if can_grow:
-                self.grow(self.__parent_dataset)
+                self.grow()
 
-        self.__map_data_to_neurons(self.__parent_dataset)
+        self.__map_data_to_neurons()
 
-    def __neurons_training(self, decay, epochs, input_dataset, learning_rate, sigma):
+    def __neurons_training(self, decay, epochs, learning_rate, sigma):
         lr = learning_rate
         s = sigma
         for iteration in range(epochs):
-            data = input_dataset[np.random.randint(len(input_dataset))]
+            data = self.__parent_dataset[np.random.randint(len(self.__parent_dataset))]
             self.__update_neurons(data, lr, s)
 
             lr *= decay
@@ -66,9 +66,9 @@ class GSOM:
 
         return np.outer(np.exp(-1 * gauss_row), np.exp(-1 * gauss_col))
 
-    def __can_grow(self, input_dataset):
+    def __can_grow(self):
         # NOTE: reviewed
-        self.__map_data_to_neurons(input_dataset)
+        self.__map_data_to_neurons()
 
         MQE = 0.0
         mapped_neurons = 0
@@ -79,12 +79,12 @@ class GSOM:
 
         return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
 
-    def __map_data_to_neurons(self, input_dataset):
+    def __map_data_to_neurons(self):
         # NOTE: reviewed
         self.__clear_neurons_dataset()
 
         # finding the new association for each neuron
-        for data in input_dataset:
+        for data in self.__parent_dataset:
             winner = self.winner_neuron(data)
             winner.input_dataset = np.vstack(tup=(winner.input_dataset, data))
 
@@ -93,9 +93,9 @@ class GSOM:
         for neuron in self.neurons.values():
             neuron.input_dataset = np.empty(shape=(0, neuron.input_dataset.shape[1]), dtype=np.float32)
 
-    def __find_error_neuron(self, input_dataset):
+    def __find_error_neuron(self,):
         # NOTE: reviewed
-        self.__map_data_to_neurons(input_dataset)
+        self.__map_data_to_neurons()
 
         quantization_errors = list()
         for neuron in self.neurons.values():
@@ -116,9 +116,9 @@ class GSOM:
 
         return max(weight_distances, key=weight_distances.get)
 
-    def grow(self, input_dataset):
+    def grow(self):
         # NOTE: reviewed
-        error_neuron = self.__find_error_neuron(input_dataset)
+        error_neuron = self.__find_error_neuron()
         dissimilar_neuron = self.__find_most_dissimilar_neuron(error_neuron)
 
         if self.are_in_same_row(error_neuron, dissimilar_neuron):

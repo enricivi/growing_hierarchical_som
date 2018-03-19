@@ -55,7 +55,7 @@ class GHSOM:
         zero_unit.child_map = self.__build_new_GSOM(
             self.__neuron_builder.zero_quantization_error,
             zero_unit.input_dataset,
-            self.__calc_initial_random_weights(self.__input_dataset)
+            self.__calc_initial_random_weights()
         )
 
         return zero_unit
@@ -106,11 +106,10 @@ class GHSOM:
     def __filter_out_of_bound_positions(self, child_position, stencil, map_shape):
         return np.asarray(list(filter(lambda pos: self.__check_position(pos, map_shape), stencil + child_position)))
 
-    @staticmethod
-    def __calc_initial_random_weights(input_dataset):
-        random_weights = np.zeros(shape=(2, 2, input_dataset.shape[1]))
+    def __calc_initial_random_weights(self):
+        random_weights = np.zeros(shape=(2, 2, self.__input_dimension))
         for position in np.ndindex(2, 2):
-            random_data_item = input_dataset[np.random.randint(len(input_dataset))]
+            random_data_item = self.__input_dataset[np.random.randint(len(self.__input_dataset))]
             random_weights[position] = random_data_item / np.linalg.norm(random_data_item)
 
         return random_weights
