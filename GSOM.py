@@ -1,6 +1,8 @@
 from neuron import NeuronBuilder
 import numpy as np
 
+from matplotlib import pyplot as plt
+
 
 class GSOM:
     def __init__(self, initial_map_size, parent_quantization_error, t1, data_size, weights_map, parent_dataset):
@@ -36,12 +38,14 @@ class GSOM:
         self.__map_data_to_neurons(self.__parent_dataset)
 
     def __neurons_training(self, decay, epochs, input_dataset, learning_rate, sigma):
+        lr = learning_rate
+        s = sigma
         for iteration in range(epochs):
             data = input_dataset[np.random.randint(len(input_dataset))]
-            self.__update_neurons(data, learning_rate, sigma)
+            self.__update_neurons(data, lr, s)
 
-            learning_rate *= decay
-            sigma *= decay
+            lr *= decay
+            s *= decay
 
     def __update_neurons(self, data, learning_rate, sigma):
         gauss_kernel = self.__gaussian_kernel(self.winner_neuron(data), sigma)
@@ -55,12 +59,12 @@ class GSOM:
     def __gaussian_kernel(self, winner_neuron, gaussian_sigma):
         # computing gaussian kernel
         winner_row, winner_col = winner_neuron.position
-        s = 2 * gaussian_sigma ** 2
+        s = 2 * (gaussian_sigma ** 2)
 
         gauss_col = np.power(np.asarray(range(self.__map_shape()[1])) - winner_col, 2) / s
         gauss_row = np.power(np.asarray(range(self.__map_shape()[0])) - winner_row, 2) / s
 
-        return np.exp(-1 * np.outer(gauss_row, gauss_col))
+        return np.outer(np.exp(-1 * gauss_row), np.exp(-1 * gauss_col))
 
     def __can_grow(self, input_dataset):
         # NOTE: reviewed
