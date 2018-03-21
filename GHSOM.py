@@ -3,6 +3,8 @@ from GSOM import GSOM
 import numpy as np
 from queue import Queue
 
+from multiprocessing import Pool
+
 
 class GHSOM:
     def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, epoch_number=5, growing_metric="qe"):
@@ -24,28 +26,34 @@ class GHSOM:
     def __call__(self, *args, **kwargs):
         zero_unit = self.__init_zero_unit()
 
-        map_queue = Queue()
-        map_queue.put(zero_unit.child_map)
+        neuron_queue = Queue()
+        neuron_queue.put(zero_unit)
 
-        while not map_queue.empty():
-            gmap = map_queue.get()
-            gmap.train(
-                self.__epoch_number,
-                self.__gaussian_sigma,
-                self.__learning_rate,
-                self.__decay
-            )
-            map_queue.task_done()
+        pool = Pool(processes=None)
+        while not neuron_queue.empty():
+            size = min(neuron_queue.qsize(), pool._processes)
+            gmaps = dict()
+            for _ in range(size):
+                neuron = neuron_queue.get()
+                gmaps[neuron] = (pool.apply_async(neuron.child_map.train, (
+                    self.__epoch_number,
+                    self.__gaussian_sigma,
+                    self.__learning_rate,
+                    self.__decay
+                )))
 
-            neurons_to_expand = filter(lambda _neuron: _neuron.needs_child_map(), gmap.neurons.values())
-            for neuron in neurons_to_expand:
-                neuron.child_map = self.__build_new_GSOM(
-                    neuron.compute_quantization_error(),
-                    neuron.input_dataset,
-                    self.__new_map_weights(neuron.position, gmap.weights_map[0])
-                )
+            for neuron in gmaps:
+                gmap = gmaps[neuron].get()
+                neuron.child_map = gmap
+                neurons_to_expand = filter(lambda _neuron: _neuron.needs_child_map(), gmap.neurons.values())
+                for neuron in neurons_to_expand:
+                    neuron.child_map = self.__build_new_GSOM(
+                        neuron.compute_quantization_error(),
+                        neuron.input_dataset,
+                        self.__new_map_weights(neuron.position, gmap.weights_map[0])
+                    )
 
-                map_queue.put(neuron.child_map)
+                    neuron_queue.put(neuron)
 
         return zero_unit
 

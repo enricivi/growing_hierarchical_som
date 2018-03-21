@@ -38,6 +38,7 @@ class GSOM:
                 self.grow()
 
         self.__map_data_to_neurons()
+        return self
 
     def __neurons_training(self, decay, epochs, learning_rate, sigma):
         lr = learning_rate
