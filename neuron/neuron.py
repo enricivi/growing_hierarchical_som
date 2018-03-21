@@ -15,7 +15,7 @@ class Neuron:
         self.position = weight_vector_position
 
         self.child_map = None
-        self.input_dataset = np.empty(shape=(0, self.__weight_map[0].shape[2]), dtype=np.float32)
+        self.input_dataset = self.__init_empty_dataset()
 
     def activation(self, data):
         return np.linalg.norm(np.subtract(data, self.weight_vector()), axis=0)
@@ -37,3 +37,16 @@ class Neuron:
 
     def weight_vector(self):
         return self.__weight_map[0][self.position]
+
+    def has_dataset(self):
+        return len(self.input_dataset) != 0
+
+    def append_data(self, data_item):
+        self.input_dataset = np.vstack((self.input_dataset, data_item))
+
+    def clear_dataset(self):
+        self.input_dataset = self.__init_empty_dataset()
+
+    def __init_empty_dataset(self):
+        input_dimension = self.__weight_map[0].shape[2]
+        return np.empty(shape=(0, input_dimension), dtype=np.float32)
