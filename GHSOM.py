@@ -5,25 +5,27 @@ from queue import Queue
 
 
 class GHSOM:
-    def __init__(self, t1, t2, learning_rate, decay, gaussian_sigma, epoch_number=5,
-                 growing_metric="qe"):
+    def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, epoch_number=5, growing_metric="qe"):
         """
         :type epoch_number: The lambda parameter; controls the number of iteration between growing checks
         """
-        self.__growing_metric = growing_metric
+        self.__input_dataset = input_dataset
+        self.__input_dimension = input_dataset.shape[1]
+
         self.__gaussian_sigma = gaussian_sigma
         self.__decay = decay
         self.__learning_rate = learning_rate
-        self.__t2 = t2
+
         self.__t1 = t1
         self.__epoch_number = epoch_number
 
-    def __call__(self, input_dataset, *args, **kwargs):
-        zero_unit = self.__init_zero_unit(input_dataset)
-        zero_unit_child_map = zero_unit.child_map
+        self.__neuron_builder = NeuronBuilder(t2, growing_metric)
+
+    def __call__(self, *args, **kwargs):
+        zero_unit = self.__init_zero_unit()
 
         map_queue = Queue()
-        map_queue.put(zero_unit_child_map)
+        map_queue.put(zero_unit.child_map)
 
         while not map_queue.empty():
             gmap = map_queue.get()
@@ -33,46 +35,44 @@ class GHSOM:
                 self.__learning_rate,
                 self.__decay
             )
+            map_queue.task_done()
 
             neurons_to_expand = filter(lambda _neuron: _neuron.needs_child_map(), gmap.neurons.values())
             for neuron in neurons_to_expand:
-                neuron.child_map = GSOM(
-                    (2, 2),
+                neuron.child_map = self.__build_new_GSOM(
                     neuron.compute_quantization_error(),
-                    self.__t1,
-                    self.__t2,
-                    self.__growing_metric,
-                    input_dataset.shape[1],
-                    self.__new_map_weights(neuron.position, gmap.weights_map, input_dataset.shape[1]),
-                    neuron.input_dataset
+                    neuron.input_dataset,
+                    self.__new_map_weights(neuron.position, gmap.weights_map[0])
                 )
 
                 map_queue.put(neuron.child_map)
 
         return zero_unit
 
-    def __init_zero_unit(self, input_dataset):
-        zero_unit = NeuronBuilder.zero_neuron(
-            np.reshape(self.__calc_input_mean(input_dataset), newshape=(1, 1, input_dataset.shape[1])),
-            input_dataset,
-            self.__t2,
-            self.__growing_metric
-        )
+    def __init_zero_unit(self):
+        zero_unit = self.__neuron_builder.zero_neuron(self.__input_dataset)
 
-        zero_unit.child_map = GSOM(
-            (2, 2),
-            NeuronBuilder.get_zero_quantization_error(),
-            self.__t1,
-            self.__t2,
-            self.__growing_metric,
-            input_dataset.shape[1],
-            self.__calc_initial_random_weights(input_dataset),
-            zero_unit.input_dataset
+        zero_unit.child_map = self.__build_new_GSOM(
+            self.__neuron_builder.zero_quantization_error,
+            zero_unit.input_dataset,
+            self.__calc_initial_random_weights()
         )
 
         return zero_unit
 
-    def __new_map_weights(self, parent_position, weights_map, features_length):
+    # noinspection PyPep8Naming
+    def __build_new_GSOM(self, parent_quantization_error, parent_dataset, weights_map):
+        return GSOM(
+            (2, 2),
+            parent_quantization_error,
+            self.__t1,
+            self.__input_dimension,
+            weights_map,
+            parent_dataset,
+            self.__neuron_builder
+        )
+
+    def __new_map_weights(self, parent_position, weights_map):
         """
          ______ ______ ______
         |      |      |      |         child (2x2)
@@ -86,11 +86,13 @@ class GHSOM:
         |______|______|______|
         """
 
-        child_weights = np.zeros(shape=(2, 2, features_length))
+        child_weights = np.zeros(shape=(2, 2, self.__input_dimension))
         stencil = self.__generate_kernel_stencil(parent_position)
         for child_position in np.ndindex(2, 2):
-            mask = np.asarray([s for s in stencil if self.__check_position(s, weights_map.shape)])
-            weight = np.mean(weights_map[mask[:, 0], mask[:, 1]], axis=0)
+            child_position = np.asarray(child_position)
+            mask = self.__filter_out_of_bound_positions(child_position, stencil, weights_map.shape)
+
+            weight = np.mean(self.__elements_from_positions_list(weights_map, mask), axis=0)
             weight /= np.linalg.norm(weight)
 
             child_weights[child_position] = weight
@@ -98,15 +100,16 @@ class GHSOM:
         return child_weights
 
     @staticmethod
-    def __calc_input_mean(input_dataset):
-        mean_vector = input_dataset.mean(axis=0)
-        return mean_vector / np.linalg.norm(mean_vector)
+    def __elements_from_positions_list(matrix, positions_list):
+        return matrix[positions_list[:, 0], positions_list[:, 1]]
 
-    @staticmethod
-    def __calc_initial_random_weights(input_dataset):
-        random_weights = np.zeros(shape=(2, 2, input_dataset.shape[1]))
+    def __filter_out_of_bound_positions(self, child_position, stencil, map_shape):
+        return np.asarray(list(filter(lambda pos: self.__check_position(pos, map_shape), stencil + child_position)))
+
+    def __calc_initial_random_weights(self):
+        random_weights = np.zeros(shape=(2, 2, self.__input_dimension))
         for position in np.ndindex(2, 2):
-            random_data_item = input_dataset[np.random.randint(len(input_dataset))]
+            random_data_item = self.__input_dataset[np.random.randint(len(self.__input_dataset))]
             random_weights[position] = random_data_item / np.linalg.norm(random_data_item)
 
         return random_weights

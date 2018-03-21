@@ -15,7 +15,7 @@ class Neuron:
         self.position = weight_vector_position
 
         self.child_map = None
-        self.input_dataset = np.empty(shape=(0, self.__weight_map.shape[2]), dtype=np.float32)
+        self.input_dataset = self.__init_empty_dataset()
 
     def activation(self, data):
         return np.linalg.norm(np.subtract(data, self.weight_vector()), axis=0)
@@ -24,8 +24,6 @@ class Neuron:
         return self.compute_quantization_error() >= (self.__t2 * self.__zero_quantization_error)
 
     def compute_quantization_error(self):
-        assert self.input_dataset is not None, "The unit has not been provided with an input dataset"
-
         distance_from_whole_dataset = self.activation(self.input_dataset)
         quantization_error = distance_from_whole_dataset.sum()
 
@@ -38,4 +36,17 @@ class Neuron:
         return np.linalg.norm(self.weight_vector() - unit.weight_vector())
 
     def weight_vector(self):
-        return self.__weight_map[self.position]
+        return self.__weight_map[0][self.position]
+
+    def has_dataset(self):
+        return len(self.input_dataset) != 0
+
+    def append_data(self, data_item):
+        self.input_dataset = np.vstack((self.input_dataset, data_item))
+
+    def clear_dataset(self):
+        self.input_dataset = self.__init_empty_dataset()
+
+    def __init_empty_dataset(self):
+        input_dimension = self.__weight_map[0].shape[2]
+        return np.empty(shape=(0, input_dimension), dtype=np.float32)

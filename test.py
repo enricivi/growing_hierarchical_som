@@ -21,14 +21,14 @@ print("dataset length: {}".format(n_samples))
 print("features per example: {}".format(n_features))
 print("number of digits: {}\n".format(n_digits))
 
-ghsom = GHSOM(t1=0.035, t2=0.0035, learning_rate=0.5, decay=0.99, gaussian_sigma=1, epoch_number=5)
-
+ghsom = GHSOM(input_dataset=data, t1=2*0.035, t2=50*0.0035, learning_rate=0.5, decay=0.99, gaussian_sigma=1, epoch_number=5)
 #print("Normalizing dataset...")
 #normalize_dataset(data)
 
 print("Training...")
 start = time()
-zu = ghsom(input_dataset=data)
+zu = ghsom()
 print("Elapsed time is {:.2f} seconds".format(time() - start))
 
 print("\n{}".format(len(zu.input_dataset)))
+
