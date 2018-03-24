@@ -28,10 +28,10 @@ class GSOM:
         idx = np.unravel_index(np.argmin(activations), dims=self.__map_shape())
         return self.neurons[idx]
 
-    def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay):
+    def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay, seed):
         can_grow = True
         while can_grow:
-            self.__neurons_training(decay, epochs, initial_learning_rate, initial_gaussian_sigma)
+            self.__neurons_training(decay, epochs, initial_learning_rate, initial_gaussian_sigma, seed)
 
             can_grow = self.__can_grow()
             if can_grow:
@@ -40,11 +40,12 @@ class GSOM:
         self.__map_data_to_neurons()
         return self
 
-    def __neurons_training(self, decay, epochs, learning_rate, sigma):
+    def __neurons_training(self, decay, epochs, learning_rate, sigma, seed):
         lr = learning_rate
         s = sigma
+        random_generator = np.random.RandomState(seed)
         for iteration in range(epochs):
-            data = self.__parent_dataset[np.random.randint(len(self.__parent_dataset))]
+            data = self.__parent_dataset[random_generator.randint(len(self.__parent_dataset))]
             self.__update_neurons(data, lr, s)
 
             lr *= decay

@@ -7,7 +7,7 @@ from multiprocessing import Pool
 
 
 class GHSOM:
-    def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, epoch_number=5, growing_metric="qe"):
+    def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, epochs_number=5, growing_metric="qe"):
         """
         :type epoch_number: The lambda parameter; controls the number of iteration between growing checks
         """
@@ -19,12 +19,12 @@ class GHSOM:
         self.__learning_rate = learning_rate
 
         self.__t1 = t1
-        self.__epoch_number = epoch_number
+        self.__epoch_number = epochs_number
 
         self.__neuron_builder = NeuronBuilder(t2, growing_metric)
 
-    def __call__(self, *args, **kwargs):
-        zero_unit = self.__init_zero_unit()
+    def train(self, seed=None, *args, **kwargs):
+        zero_unit = self.__init_zero_unit(seed=seed)
 
         neuron_queue = Queue()
         neuron_queue.put(zero_unit)
@@ -39,7 +39,8 @@ class GHSOM:
                     self.__epoch_number,
                     self.__gaussian_sigma,
                     self.__learning_rate,
-                    self.__decay
+                    self.__decay,
+                    seed
                 )))
 
             for neuron in gmaps:
@@ -57,13 +58,13 @@ class GHSOM:
 
         return zero_unit
 
-    def __init_zero_unit(self):
+    def __init_zero_unit(self, seed):
         zero_unit = self.__neuron_builder.zero_neuron(self.__input_dataset)
 
         zero_unit.child_map = self.__build_new_GSOM(
             self.__neuron_builder.zero_quantization_error,
             zero_unit.input_dataset,
-            self.__calc_initial_random_weights()
+            self.__calc_initial_random_weights(seed=seed)
         )
 
         return zero_unit
@@ -114,10 +115,11 @@ class GHSOM:
     def __filter_out_of_bound_positions(self, child_position, stencil, map_shape):
         return np.asarray(list(filter(lambda pos: self.__check_position(pos, map_shape), stencil + child_position)))
 
-    def __calc_initial_random_weights(self):
+    def __calc_initial_random_weights(self, seed):
+        random_generator = np.random.RandomState(seed)
         random_weights = np.zeros(shape=(2, 2, self.__input_dimension))
         for position in np.ndindex(2, 2):
-            random_data_item = self.__input_dataset[np.random.randint(len(self.__input_dataset))]
+            random_data_item = self.__input_dataset[random_generator.randint(len(self.__input_dataset))]
             random_weights[position] = random_data_item / np.linalg.norm(random_data_item)
 
         return random_weights

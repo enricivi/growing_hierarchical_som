@@ -24,18 +24,15 @@ print("dataset length: {}".format(n_samples))
 print("features per example: {}".format(n_features))
 print("number of digits: {}\n".format(n_digits))
 
-ghsom = GHSOM(input_dataset=data, t1=0.2, t2=0.1, learning_rate=0.5, decay=0.7, gaussian_sigma=1, epoch_number=15)
+ghsom = GHSOM(input_dataset=data, t1=0.2, t2=0.1, learning_rate=0.5, decay=0.7, gaussian_sigma=1, epochs_number=15)
 #print("Normalizing dataset...")
 #normalize_dataset(data)
 
 print("Training...")
 start = time()
-zu = ghsom()
+zu = ghsom.train(seed=0)
 print("Elapsed time is {:.2f} seconds\n".format(time() - start))
 
 map_per_level = dict()
 explore(zu, map_per_level)
 plot(map_per_level, level=1)
-plot(map_per_level, level=2)
-for n in map_per_level[2]:
-    print(n[1].position)
