@@ -65,4 +65,3 @@ class Neuron:
             for neuron in self.child_map.neurons.values():
                 _printable += neuron.__repr__(level+1)
         return _printable
-
