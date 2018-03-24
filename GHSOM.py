@@ -23,7 +23,7 @@ class GHSOM:
 
         self.__neuron_builder = NeuronBuilder(t2, growing_metric)
 
-    def train(self, seed=None, *args, **kwargs):
+    def train(self, seed=None):
         zero_unit = self.__init_zero_unit(seed=seed)
 
         neuron_queue = Queue()

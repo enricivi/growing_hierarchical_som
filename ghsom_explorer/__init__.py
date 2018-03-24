@@ -1,2 +1,0 @@
-from ghsom_explorer.ghsom_explorer import explore
-from ghsom_explorer.ghsom_explorer import plot

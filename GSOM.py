@@ -1,8 +1,4 @@
-from neuron import NeuronBuilder
 import numpy as np
-
-from matplotlib import pyplot as plt
-
 
 class GSOM:
     def __init__(self, initial_map_size, parent_quantization_error, t1, data_size, weights_map, parent_dataset, neuron_builder):

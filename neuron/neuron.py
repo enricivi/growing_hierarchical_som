@@ -50,3 +50,19 @@ class Neuron:
     def __init_empty_dataset(self):
         input_dimension = self.__weight_map[0].shape[2]
         return np.empty(shape=(0, input_dimension), dtype=np.float32)
+
+    def __repr__(self, level=0):
+        gap = '\t'*level
+        _printable = "{}position {} -- map dimensions {} -- input dataset {} element(s) -- level {} \n".format(
+            gap,
+            self.position,
+            self.__weight_map[0].shape,
+            self.input_dataset.shape[0],
+            level
+        )
+
+        if self.child_map is not None:
+            for neuron in self.child_map.neurons.values():
+                _printable += neuron.__repr__(level+1)
+        return _printable
+
