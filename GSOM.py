@@ -53,7 +53,6 @@ class GSOM:
         for neuron in self.neurons.values():
             weight = neuron.weight_vector()
             weight += learning_rate * gauss_kernel[neuron.position] * (data - weight)
-            weight /= np.linalg.norm(weight)
             self.weights_map[0][neuron.position] = weight
 
     def __gaussian_kernel(self, winner_neuron, gaussian_sigma):
@@ -188,7 +187,7 @@ class GSOM:
         weight_vector = np.zeros(shape=self.__data_size, dtype=np.float32)
         for adjacent_idx in neuron_idxs:
             weight_vector += 0.5 * self.neurons[adjacent_idx].weight_vector()
-        return weight_vector / np.linalg.norm(weight_vector)
+        return weight_vector
 
     @staticmethod
     def __get_adjacent_neuron_idxs_by_direction(row, col, direction):
