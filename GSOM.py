@@ -1,3 +1,5 @@
+from math import ceil
+
 import numpy as np
 
 class GSOM:
@@ -39,10 +41,9 @@ class GSOM:
     def __neurons_training(self, decay, epochs, learning_rate, sigma, seed):
         lr = learning_rate
         s = sigma
-        random_generator = np.random.RandomState(seed)
         for iteration in range(epochs):
-            data = self.__parent_dataset[random_generator.randint(len(self.__parent_dataset))]
-            self.__update_neurons(data, lr, s)
+            for data in self.__training_data(seed):
+                self.__update_neurons(data, lr, s)
 
             lr *= decay
             s *= decay
@@ -227,3 +228,14 @@ class GSOM:
     def __map_shape(self):
         shape = self.weights_map[0].shape
         return shape[0], shape[1]
+
+    def __training_data(self, seed):
+        dataset_size = len(self.__parent_dataset)
+        if dataset_size <= 70:
+            iterator = range(dataset_size)
+        else:
+            iterator = range(int(ceil(dataset_size * 40 / 100)))
+
+        random_generator = np.random.RandomState(seed)
+        for _ in iterator:
+            yield self.__parent_dataset[random_generator.randint(dataset_size)]
