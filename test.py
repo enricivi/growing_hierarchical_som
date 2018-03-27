@@ -33,25 +33,26 @@ def normalize_dataset(dataset):
         dataset[idx] = norm_data
 
 
-digits = load_digits()
+if __name__ == '__main__':
+    digits = load_digits()
 
-data = digits.data
-n_samples, n_features = data.shape
-n_digits = len(np.unique(digits.target))
-labels = digits.target
+    data = digits.data
+    n_samples, n_features = data.shape
+    n_digits = len(np.unique(digits.target))
+    labels = digits.target
 
-print("dataset length: {}".format(n_samples))
-print("features per example: {}".format(n_features))
-print("number of digits: {}\n".format(n_digits))
+    print("dataset length: {}".format(n_samples))
+    print("features per example: {}".format(n_features))
+    print("number of digits: {}\n".format(n_digits))
 
-ghsom = GHSOM(input_dataset=data, t1=0.2, t2=0.1, learning_rate=0.5, decay=0.7, gaussian_sigma=1, epochs_number=15)
-#print("Normalizing dataset...")
-#normalize_dataset(data)
+    ghsom = GHSOM(input_dataset=data, t1=0.2, t2=0.1, learning_rate=0.5, decay=0.7, gaussian_sigma=1, epochs_number=15)
+    #print("Normalizing dataset...")
+    #normalize_dataset(data)
 
-print("Training...")
-start = time()
-zu = ghsom.train(seed=0)
-print("Elapsed time is {:.2f} seconds\n".format(time() - start))
+    print("Training...")
+    start = time()
+    zu = ghsom.train(seed=0)
+    print("Elapsed time is {:.2f} seconds\n".format(time() - start))
 
-print(zu)
-plot(zu.child_map)
+    print(zu)
+    plot(zu.child_map)
