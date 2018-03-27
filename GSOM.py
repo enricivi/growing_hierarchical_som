@@ -16,7 +16,6 @@ class GSOM:
         self.neurons = self.__build_neurons_list()
 
     def winner_neuron(self, data):
-        # NOTE: reviewed
         activations = list()
         for neuron in self.neurons.values():
             activations.append(neuron.activation(data))
@@ -24,10 +23,12 @@ class GSOM:
         idx = np.unravel_index(np.argmin(activations), dims=self.__map_shape())
         return self.neurons[idx]
 
-    def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay, seed):
+    def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay, dataset_percentage, seed):
+        update_steps = int(len(self.__parent_dataset)*dataset_percentage)
         can_grow = True
         while can_grow:
-            self.__neurons_training(decay, epochs, initial_learning_rate, initial_gaussian_sigma, seed)
+            self.__neurons_training(decay, epochs, initial_learning_rate,
+                                    initial_gaussian_sigma, update_steps, seed)
 
             can_grow = self.__can_grow()
             if can_grow:
@@ -36,13 +37,14 @@ class GSOM:
         self.__map_data_to_neurons()
         return self
 
-    def __neurons_training(self, decay, epochs, learning_rate, sigma, seed):
+    def __neurons_training(self, decay, epochs, learning_rate, sigma, update_steps, seed):
         lr = learning_rate
         s = sigma
         random_generator = np.random.RandomState(seed)
         for iteration in range(epochs):
-            data = self.__parent_dataset[random_generator.randint(len(self.__parent_dataset))]
-            self.__update_neurons(data, lr, s)
+            for _ in range(update_steps):
+                data = self.__parent_dataset[random_generator.randint(len(self.__parent_dataset))]
+                self.__update_neurons(data, lr, s)
 
             lr *= decay
             s *= decay
@@ -53,7 +55,7 @@ class GSOM:
         for neuron in self.neurons.values():
             weight = neuron.weight_vector()
             weight += learning_rate * gauss_kernel[neuron.position] * (data - weight)
-            weight /= np.linalg.norm(weight)
+            # weight /= np.linalg.norm(weight)
             self.weights_map[0][neuron.position] = weight
 
     def __gaussian_kernel(self, winner_neuron, gaussian_sigma):
@@ -67,7 +69,6 @@ class GSOM:
         return np.outer(np.exp(-1 * gauss_row), np.exp(-1 * gauss_col))
 
     def __can_grow(self):
-        # NOTE: reviewed
         self.__map_data_to_neurons()
 
         MQE = 0.0
@@ -80,7 +81,6 @@ class GSOM:
         return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
 
     def __map_data_to_neurons(self):
-        # NOTE: reviewed
         self.__clear_neurons_dataset()
 
         # finding the new association for each neuron
@@ -89,12 +89,10 @@ class GSOM:
             winner.append_data(data)
 
     def __clear_neurons_dataset(self):
-        # NOTE: reviewed
         for neuron in self.neurons.values():
             neuron.clear_dataset()
 
     def __find_error_neuron(self,):
-        # NOTE: reviewed
         self.__map_data_to_neurons()
 
         quantization_errors = list()
@@ -108,7 +106,6 @@ class GSOM:
         return self.neurons[idx]
 
     def __find_most_dissimilar_neuron(self, error_neuron):
-        # NOTE: reviewed
         weight_distances = dict()
         for neuron in self.neurons.values():
             if self.are_neurons_neighbours(error_neuron, neuron):
@@ -117,7 +114,6 @@ class GSOM:
         return max(weight_distances, key=weight_distances.get)
 
     def grow(self):
-        # NOTE: reviewed
         error_neuron = self.__find_error_neuron()
         dissimilar_neuron = self.__find_most_dissimilar_neuron(error_neuron)
 
@@ -131,7 +127,6 @@ class GSOM:
             raise RuntimeError("Error neuron and the most dissimilar are not adjacent")
 
     def add_column_between(self, error_neuron, dissimilar_neuron):
-        # NOTE: reviewed
         error_col = error_neuron.position[1]
         dissimilar_col = dissimilar_neuron.position[1]
         new_column_idx = max(error_col, dissimilar_col)
@@ -153,7 +148,6 @@ class GSOM:
         return new_line_idx
 
     def add_row_between(self, error_neuron, dissimilar_neuron):
-        # NOTE: reviewed
         error_row = error_neuron.position[0]
         dissimilar_row = dissimilar_neuron.position[0]
         new_row_idx = max(error_row, dissimilar_row)
@@ -175,7 +169,6 @@ class GSOM:
         return new_line_idx
 
     def __init_new_neurons_weight_vector(self, new_neuron_idxs, new_line_direction):
-        # NOTE: reviewed
         for row, col in new_neuron_idxs:
             adjacent_neuron_idxs = self.__get_adjacent_neuron_idxs_by_direction(row, col, new_line_direction)
             weight_vector = self.__mean_weight_vector(adjacent_neuron_idxs)
@@ -184,15 +177,13 @@ class GSOM:
             self.neurons[(row, col)] = self.__build_neuron((row, col))
 
     def __mean_weight_vector(self, neuron_idxs):
-        # NOTE: reviewed
         weight_vector = np.zeros(shape=self.__data_size, dtype=np.float32)
         for adjacent_idx in neuron_idxs:
             weight_vector += 0.5 * self.neurons[adjacent_idx].weight_vector()
-        return weight_vector / np.linalg.norm(weight_vector)
+        return weight_vector  # / np.linalg.norm(weight_vector)
 
     @staticmethod
     def __get_adjacent_neuron_idxs_by_direction(row, col, direction):
-        # NOTE: reviewed
         adjacent_neuron_idxs = list()
         if direction == "horizontal":
             adjacent_neuron_idxs = [(row, col - 1), (row, col + 1)]
@@ -204,17 +195,14 @@ class GSOM:
 
     @staticmethod
     def are_neurons_neighbours(first_neuron, second_neuron):
-        # NOTE: reviewed
         return np.linalg.norm(np.asarray(first_neuron.position) - np.asarray(second_neuron.position), ord=1) == 1
 
     @staticmethod
     def are_in_same_row(first_neuron, second_neuron):
-        # NOTE: reviewed
         return abs(first_neuron.position[0] - second_neuron.position[0]) == 0
 
     @staticmethod
     def are_in_same_column(first_neuron, second_neuron):
-        # NOTE: reviewed
         return abs(first_neuron.position[1] - second_neuron.position[1]) == 0
 
     def __build_neurons_list(self):
@@ -222,7 +210,6 @@ class GSOM:
         return {(x, y): self.__build_neuron((x, y)) for x in range(rows) for y in range(cols)}
 
     def __build_neuron(self, weight_position):
-        # NOTE: reviewed
         return self.__neuron_builder.new_neuron(self.weights_map, weight_position)
 
     def __map_shape(self):

@@ -7,7 +7,8 @@ from multiprocessing import Pool
 
 
 class GHSOM:
-    def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, epochs_number=5, growing_metric="qe"):
+    def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, epochs_number=10,
+                 dataset_percentage=0.25, growing_metric="qe"):
         """
         :type epoch_number: The lambda parameter; controls the number of iteration between growing checks
         """
@@ -20,6 +21,7 @@ class GHSOM:
 
         self.__t1 = t1
         self.__epoch_number = epochs_number
+        self.__dataset_percentage = dataset_percentage
 
         self.__neuron_builder = NeuronBuilder(t2, growing_metric)
 
@@ -40,6 +42,7 @@ class GHSOM:
                     self.__gaussian_sigma,
                     self.__learning_rate,
                     self.__decay,
+                    self.__dataset_percentage,
                     seed
                 )))
 
@@ -102,7 +105,7 @@ class GHSOM:
             mask = self.__filter_out_of_bound_positions(child_position, stencil, weights_map.shape)
 
             weight = np.mean(self.__elements_from_positions_list(weights_map, mask), axis=0)
-            weight /= np.linalg.norm(weight)
+            # weight /= np.linalg.norm(weight)
 
             child_weights[child_position] = weight
 
@@ -120,7 +123,7 @@ class GHSOM:
         random_weights = np.zeros(shape=(2, 2, self.__input_dimension))
         for position in np.ndindex(2, 2):
             random_data_item = self.__input_dataset[random_generator.randint(len(self.__input_dataset))]
-            random_weights[position] = random_data_item / np.linalg.norm(random_data_item)
+            random_weights[position] = random_data_item  # / np.linalg.norm(random_data_item)
 
         return random_weights
 
