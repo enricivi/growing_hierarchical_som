@@ -26,11 +26,10 @@ class GSOM:
         return self.neurons[idx]
 
     def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay, dataset_percentage, seed):
-        update_steps = int(len(self.__parent_dataset)*dataset_percentage)
         can_grow = True
         while can_grow:
             self.__neurons_training(decay, epochs, initial_learning_rate,
-                                    initial_gaussian_sigma, update_steps, seed)
+                                    initial_gaussian_sigma, dataset_percentage, seed)
 
             can_grow = self.__can_grow()
             if can_grow:
@@ -39,11 +38,11 @@ class GSOM:
         self.__map_data_to_neurons()
         return self
 
-    def __neurons_training(self, decay, epochs, learning_rate, sigma, update_steps, seed):
+    def __neurons_training(self, decay, epochs, learning_rate, sigma, dataset_percentage, seed):
         lr = learning_rate
         s = sigma
         for iteration in range(epochs):
-            for data in self.__training_data(seed):
+            for data in self.__training_data(seed, dataset_percentage):
                 self.__update_neurons(data, lr, s)
 
             lr *= decay
@@ -215,12 +214,12 @@ class GSOM:
         shape = self.weights_map[0].shape
         return shape[0], shape[1]
 
-    def __training_data(self, seed):
+    def __training_data(self, seed, dataset_percentage):
         dataset_size = len(self.__parent_dataset)
         if dataset_size <= 70:
             iterator = range(dataset_size)
         else:
-            iterator = range(int(ceil(dataset_size * 40 / 100)))
+            iterator = range(int(ceil(dataset_size * dataset_percentage)))
 
         random_generator = np.random.RandomState(seed)
         for _ in iterator:

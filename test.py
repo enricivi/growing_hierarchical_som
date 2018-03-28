@@ -40,7 +40,7 @@ if __name__ == '__main__':
     print("number of digits: {}\n".format(n_digits))
 
     ghsom = GHSOM(input_dataset=data, t1=0.15, t2=0.1, learning_rate=0.5, decay=0.7, gaussian_sigma=1,
-              epochs_number=15, dataset_percentage=0.25)
+                  epochs_number=15, dataset_percentage=0.35)
 
     print("Training...")
     start = time()
