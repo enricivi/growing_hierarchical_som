@@ -56,12 +56,11 @@ if __name__ == '__main__':
     print("features per example: {}".format(n_features))
     print("number of digits: {}\n".format(n_digits))
 
-    ghsom = GHSOM(input_dataset=data, t1=0.3, t2=0.1, learning_rate=0.01, decay=0.7, gaussian_sigma=1,
-                  epochs_number=15, dataset_percentage=0.35)
+    ghsom = GHSOM(input_dataset=data, t1=0.3, t2=0.03, learning_rate=0.01, decay=0.8, gaussian_sigma=1)
 
     print("Training...")
     start = time()
-    zu = ghsom.train(seed=1)
+    zu = ghsom.train(epochs_number=15, dataset_percentage=0.35, min_dataset_size=70, seed=1)
     print("Elapsed time is {:.2f} seconds\n".format(time() - start))
 
     print(zu)

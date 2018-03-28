@@ -1,5 +1,4 @@
 from math import ceil
-
 import numpy as np
 
 class GSOM:
@@ -25,11 +24,12 @@ class GSOM:
         idx = np.unravel_index(np.argmin(activations), dims=self.map_shape())
         return self.neurons[idx]
 
-    def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay, dataset_percentage, seed):
+    def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay,
+              dataset_percentage, min_dataset_size, seed):
         can_grow = True
         while can_grow:
-            self.__neurons_training(decay, epochs, initial_learning_rate,
-                                    initial_gaussian_sigma, dataset_percentage, seed)
+            self.__neurons_training(decay, epochs, initial_learning_rate, initial_gaussian_sigma,
+                                    dataset_percentage, min_dataset_size, seed)
 
             can_grow = self.__can_grow()
             if can_grow:
@@ -38,11 +38,11 @@ class GSOM:
         self.__map_data_to_neurons()
         return self
 
-    def __neurons_training(self, decay, epochs, learning_rate, sigma, dataset_percentage, seed):
+    def __neurons_training(self, decay, epochs, learning_rate, sigma, dataset_percentage, min_dataset_size, seed):
         lr = learning_rate
         s = sigma
         for iteration in range(epochs):
-            for data in self.__training_data(seed, dataset_percentage):
+            for data in self.__training_data(seed, dataset_percentage, min_dataset_size):
                 self.__update_neurons(data, lr, s)
 
             lr *= decay
@@ -214,9 +214,9 @@ class GSOM:
         shape = self.weights_map[0].shape
         return shape[0], shape[1]
 
-    def __training_data(self, seed, dataset_percentage):
+    def __training_data(self, seed, dataset_percentage, min_size):
         dataset_size = len(self.__parent_dataset)
-        if dataset_size <= 70:
+        if dataset_size <= min_size:
             iterator = range(dataset_size)
         else:
             iterator = range(int(ceil(dataset_size * dataset_percentage)))

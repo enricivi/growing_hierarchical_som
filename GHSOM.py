@@ -7,11 +7,7 @@ from multiprocessing import Pool
 
 
 class GHSOM:
-    def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, epochs_number=10,
-                 dataset_percentage=0.25, growing_metric="qe"):
-        """
-        :type epoch_number: The lambda parameter; controls the number of iteration between growing checks
-        """
+    def __init__(self, input_dataset, t1, t2, learning_rate, decay, gaussian_sigma, growing_metric="qe"):
         self.__input_dataset = input_dataset
         self.__input_dimension = input_dataset.shape[1]
 
@@ -20,44 +16,53 @@ class GHSOM:
         self.__learning_rate = learning_rate
 
         self.__t1 = t1
-        self.__epoch_number = epochs_number
-        self.__dataset_percentage = dataset_percentage
 
         self.__neuron_builder = NeuronBuilder(t2, growing_metric)
 
-    def train(self, seed=None):
+    def train(self, epochs_number=15, dataset_percentage=0.25, min_dataset_size=1, seed=None):
+        """
+        :type epochs_number: Controls the number of iteration between growing checks
+        """
         zero_unit = self.__init_zero_unit(seed=seed)
 
         neuron_queue = Queue()
         neuron_queue.put(zero_unit)
 
         pool = Pool(processes=None)
+
+        active_dataset = len(zero_unit.input_dataset)
         while not neuron_queue.empty():
             size = min(neuron_queue.qsize(), pool._processes)
             gmaps = dict()
             for _ in range(size):
                 neuron = neuron_queue.get()
                 gmaps[neuron] = (pool.apply_async(neuron.child_map.train, (
-                    self.__epoch_number,
+                    epochs_number,
                     self.__gaussian_sigma,
                     self.__learning_rate,
                     self.__decay,
-                    self.__dataset_percentage,
+                    dataset_percentage,
+                    min_dataset_size,
                     seed
                 )))
+                active_dataset -= len(neuron.input_dataset)
 
             for neuron in gmaps:
                 gmap = gmaps[neuron].get()
                 neuron.child_map = gmap
                 neurons_to_expand = filter(lambda _neuron: _neuron.needs_child_map(), gmap.neurons.values())
-                for neuron in neurons_to_expand:
-                    neuron.child_map = self.__build_new_GSOM(
-                        neuron.compute_quantization_error(),
-                        neuron.input_dataset,
-                        self.__new_map_weights(neuron.position, gmap.weights_map[0])
+                for _neuron in neurons_to_expand:
+                    _neuron.child_map = self.__build_new_GSOM(
+                        _neuron.compute_quantization_error(),
+                        _neuron.input_dataset,
+                        self.__new_map_weights(_neuron.position, gmap.weights_map[0])
                     )
 
-                    neuron_queue.put(neuron)
+                    neuron_queue.put(_neuron)
+
+                    active_dataset += len(_neuron.input_dataset)
+            # TODO use progressbar
+            print(active_dataset)
 
         return zero_unit
 
