@@ -22,7 +22,7 @@ class GSOM:
         for neuron in self.neurons.values():
             activations.append(neuron.activation(data))
 
-        idx = np.unravel_index(np.argmin(activations), dims=self.__map_shape())
+        idx = np.unravel_index(np.argmin(activations), dims=self.map_shape())
         return self.neurons[idx]
 
     def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay, dataset_percentage, seed):
@@ -61,8 +61,8 @@ class GSOM:
         winner_row, winner_col = winner_neuron.position
         s = 2 * (gaussian_sigma ** 2)
 
-        gauss_col = np.power(np.asarray(range(self.__map_shape()[1])) - winner_col, 2) / s
-        gauss_row = np.power(np.asarray(range(self.__map_shape()[0])) - winner_row, 2) / s
+        gauss_col = np.power(np.asarray(range(self.map_shape()[1])) - winner_col, 2) / s
+        gauss_row = np.power(np.asarray(range(self.map_shape()[0])) - winner_row, 2) / s
 
         return np.outer(np.exp(-1 * gauss_row), np.exp(-1 * gauss_col))
 
@@ -100,7 +100,7 @@ class GSOM:
                 quantization_error = neuron.compute_quantization_error()
             quantization_errors.append(quantization_error)
 
-        idx = np.unravel_index(np.argmax(quantization_errors), dims=self.__map_shape())
+        idx = np.unravel_index(np.argmax(quantization_errors), dims=self.map_shape())
         return self.neurons[idx]
 
     def __find_most_dissimilar_neuron(self, error_neuron):
@@ -129,7 +129,7 @@ class GSOM:
         dissimilar_col = dissimilar_neuron.position[1]
         new_column_idx = max(error_col, dissimilar_col)
 
-        map_rows, map_cols = self.__map_shape()
+        map_rows, map_cols = self.map_shape()
 
         new_line_idx = [(row, new_column_idx) for row in range(map_rows)]
 
@@ -150,7 +150,7 @@ class GSOM:
         dissimilar_row = dissimilar_neuron.position[0]
         new_row_idx = max(error_row, dissimilar_row)
 
-        map_rows, map_cols = self.__map_shape()
+        map_rows, map_cols = self.map_shape()
 
         new_line_idx = [(new_row_idx, col) for col in range(map_cols)]
 
@@ -210,7 +210,7 @@ class GSOM:
     def __build_neuron(self, weight_position):
         return self.__neuron_builder.new_neuron(self.weights_map, weight_position)
 
-    def __map_shape(self):
+    def map_shape(self):
         shape = self.weights_map[0].shape
         return shape[0], shape[1]
 
