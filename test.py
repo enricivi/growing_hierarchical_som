@@ -27,12 +27,6 @@ def plot(gmap):
     plt.show()
 
 
-def normalize_dataset(dataset):
-    for idx, data in enumerate(dataset):
-        norm_data = data / np.linalg.norm(data)
-        dataset[idx] = norm_data
-
-
 if __name__ == '__main__':
     digits = load_digits()
 
@@ -45,13 +39,12 @@ if __name__ == '__main__':
     print("features per example: {}".format(n_features))
     print("number of digits: {}\n".format(n_digits))
 
-    ghsom = GHSOM(input_dataset=data, t1=0.2, t2=0.1, learning_rate=0.5, decay=0.7, gaussian_sigma=1, epochs_number=15)
-    #print("Normalizing dataset...")
-    #normalize_dataset(data)
+    ghsom = GHSOM(input_dataset=data, t1=0.15, t2=0.1, learning_rate=0.5, decay=0.7, gaussian_sigma=1,
+              epochs_number=15, dataset_percentage=0.25)
 
     print("Training...")
     start = time()
-    zu = ghsom.train(seed=0)
+    zu = ghsom.train(seed=1)
     print("Elapsed time is {:.2f} seconds\n".format(time() - start))
 
     print(zu)
