@@ -2,7 +2,7 @@ from neuron import NeuronBuilder
 from GSOM import GSOM
 import numpy as np
 from queue import Queue
-
+import progressbar
 from multiprocessing import Pool
 
 
@@ -31,6 +31,12 @@ class GHSOM:
         pool = Pool(processes=None)
 
         active_dataset = len(zero_unit.input_dataset)
+
+        bar = progressbar.ProgressBar(max_value=active_dataset, widgets=[
+            '[', progressbar.Timer(), '] ',
+            progressbar.Bar(),
+            ' (', progressbar.Counter(format='%(value)02d/%(max_value)d'), ') ',
+        ])
         while not neuron_queue.empty():
             size = min(neuron_queue.qsize(), pool._processes)
             gmaps = dict()
@@ -61,8 +67,8 @@ class GHSOM:
                     neuron_queue.put(_neuron)
 
                     active_dataset += len(_neuron.input_dataset)
-            # TODO use progressbar
-            print(active_dataset)
+
+            bar.update(bar.max_value - active_dataset)
 
         return zero_unit
 
