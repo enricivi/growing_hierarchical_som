@@ -25,12 +25,14 @@ class GSOM:
         return self.neurons[idx]
 
     def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay,
-              dataset_percentage, min_dataset_size, seed):
+              dataset_percentage, min_dataset_size, seed, maxiter):
+        iter = 0
         can_grow = True
-        while can_grow:
+        while can_grow and (iter < maxiter):
             self.__neurons_training(decay, epochs, initial_learning_rate, initial_gaussian_sigma,
                                     dataset_percentage, min_dataset_size, seed)
 
+            iter += 1
             can_grow = self.__can_grow()
             if can_grow:
                 self.grow()

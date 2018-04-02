@@ -19,10 +19,7 @@ class GHSOM:
 
         self.__neuron_builder = NeuronBuilder(t2, growing_metric)
 
-    def train(self, epochs_number=15, dataset_percentage=0.25, min_dataset_size=1, seed=None):
-        """
-        :type epochs_number: Controls the number of iteration between growing checks
-        """
+    def train(self, epochs_number=15, dataset_percentage=0.25, min_dataset_size=1, seed=None, grow_maxiter=100):
         zero_unit = self.__init_zero_unit(seed=seed)
 
         neuron_queue = Queue()
@@ -49,7 +46,8 @@ class GHSOM:
                     self.__decay,
                     dataset_percentage,
                     min_dataset_size,
-                    seed
+                    seed,
+                    grow_maxiter
                 )))
                 active_dataset -= len(neuron.input_dataset)
 
