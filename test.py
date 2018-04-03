@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.datasets import load_digits
-from time import time
+from collections import OrderedDict
 from GHSOM import GHSOM
 from matplotlib import pyplot as plt
 
@@ -25,7 +25,7 @@ def __plot_child(e, gmap, level):
             interactive_plot(neuron.child_map, num=str(coords), level=level+1)
 
 
-def interactive_plot(gmap, num='root', level=0):
+def interactive_plot(gmap, num='root', level=1):
     _num = "level {} -- parent pos {}".format(level, num)
     fig, ax = plt.subplots(num=_num)
     ax.imshow(__gmap_to_matrix(gmap.weights_map), cmap='bone_r', interpolation='sinc')
@@ -34,26 +34,43 @@ def interactive_plot(gmap, num='root', level=0):
     fig.show()
 
 
-def plot(gmap):
-    plt.figure(num="parent")
-    plt.imshow(__gmap_to_matrix(gmap.weights_map), cmap='bone_r', interpolation='sinc')
-    for neuron in gmap.neurons.values():
+def __plot_child_with_labels(e, gmap, level, data, labels, associations):
+    if e.inaxes is not None:
+        coords = (int(e.ydata // 8), int(e.xdata // 8))
+        neuron = gmap.neurons[coords]
         if neuron.child_map is not None:
-            plt.figure(num=str(neuron.position))
-            plt.imshow(__gmap_to_matrix(neuron.child_map.weights_map), cmap='bone_r', interpolation='sinc')
-    plt.show()
+            assc = associations[coords[0]][coords[1]]
+            interactive_plot_with_labels(neuron.child_map, dataset=data[assc], labels=labels[assc],
+                                         num=str(coords), level=level+1)
 
 
-def distances_test(dataset, zero_unit):
-    distances = list()
-    for data in dataset:
-        _neuron = zero_unit
-        while _neuron.child_map is not None:
-            gsom = _neuron.child_map
-            _neuron = gsom.winner_neuron(data=data)
-        distances.append(np.linalg.norm(_neuron.weight_vector() - data))
-    distances = np.asanyarray(distances, dtype=np.float32)
-    return distances.mean(), distances.std(), max(distances), min(distances)
+def interactive_plot_with_labels(gmap, dataset, labels, num='root', level=1):
+    markers = ['o', 'v', '1', '3', '8', 's', 'p', 'x', '+', '*']
+    colors = ["r", "g", "b", "y", "c", (0, 0.1, 0.8), (1, 0.5, 0), (1, 1, 0.3), "m", (0.4, 0.6, 0)]
+    m_size = ((50 / gmap.map_shape()[0]) + (50 / gmap.map_shape()[1]))*0.5
+    m_width = ((10 / gmap.map_shape()[0]) + (10 / gmap.map_shape()[1]))*0.5
+
+    mapping = [[list() for _ in range(gmap.map_shape()[1])] for _ in range(gmap.map_shape()[0])]
+
+    _num = "level {} -- parent pos {}".format(level, num)
+    fig, ax = plt.subplots(num=_num)
+    ax.imshow(__gmap_to_matrix(gmap.weights_map), cmap='bone_r', interpolation='sinc')
+    fig.canvas.mpl_connect('button_press_event', lambda event: __plot_child_with_labels(event, gmap, level,
+                                                                                        dataset, labels, mapping))
+    plt.axis('off')
+
+    for idx, label in enumerate(labels):
+        winner_neuron = gmap.winner_neuron(dataset[idx])
+        r, c = winner_neuron.position
+        mapping[r][c].append(idx)
+
+        ax.plot(c*8+4, r*8+4, markers[label], markerfacecolor='None', markeredgecolor=colors[label],
+                markersize=m_size, markeredgewidth=m_width, label=label)
+    legend_handles, legend_labels = plt.gca().get_legend_handles_labels()
+    by_label = OrderedDict(zip(legend_labels, legend_handles))
+    plt.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(0., 1.02, 1., .102), ncol=5,
+               loc=3, borderaxespad=0., mode="expand")
+    fig.show()
 
 
 if __name__ == '__main__':
@@ -74,6 +91,5 @@ if __name__ == '__main__':
     zero_unit = ghsom.train(epochs_number=30, dataset_percentage=0.25, min_dataset_size=70, seed=1, grow_maxiter=30)
 
     print(zero_unit)
-    interactive_plot(zero_unit.child_map)
+    interactive_plot_with_labels(zero_unit.child_map, data, labels)
 
-    print(distances_test(data, zero_unit))
