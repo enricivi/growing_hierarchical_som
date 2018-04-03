@@ -25,7 +25,7 @@ def __plot_child(e, gmap, level):
             interactive_plot(neuron.child_map, num=str(coords), level=level+1)
 
 
-def interactive_plot(gmap, num='root', parent=None, level=0):
+def interactive_plot(gmap, num='root', level=0):
     _num = "level {} -- parent pos {}".format(level, num)
     fig, ax = plt.subplots(num=_num)
     ax.imshow(__gmap_to_matrix(gmap.weights_map), cmap='bone_r', interpolation='sinc')
@@ -44,6 +44,18 @@ def plot(gmap):
     plt.show()
 
 
+def distances_test(dataset, zero_unit):
+    distances = list()
+    for data in dataset:
+        _neuron = zero_unit
+        while _neuron.child_map is not None:
+            gsom = _neuron.child_map
+            _neuron = gsom.winner_neuron(data=data)
+        distances.append(np.linalg.norm(_neuron.weight_vector() - data))
+    distances = np.asanyarray(distances, dtype=np.float32)
+    return distances.mean(), distances.std(), max(distances), min(distances)
+
+
 if __name__ == '__main__':
     digits = load_digits()
 
@@ -56,10 +68,12 @@ if __name__ == '__main__':
     print("features per example: {}".format(n_features))
     print("number of digits: {}\n".format(n_digits))
 
-    ghsom = GHSOM(input_dataset=data, t1=0.3, t2=0.08, learning_rate=0.1, decay=0.7, gaussian_sigma=1)
+    ghsom = GHSOM(input_dataset=data, t1=0.25, t2=0.05, learning_rate=0.01, decay=0.9, gaussian_sigma=1)
 
     print("Training...")
-    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.35, min_dataset_size=70, seed=1, grow_maxiter=50)
+    zero_unit = ghsom.train(epochs_number=30, dataset_percentage=0.25, min_dataset_size=70, seed=1, grow_maxiter=30)
 
     print(zero_unit)
     interactive_plot(zero_unit.child_map)
+
+    print(distances_test(data, zero_unit))
