@@ -73,6 +73,20 @@ def interactive_plot_with_labels(gmap, dataset, labels, num='root', level=1):
     fig.show()
 
 
+def mean_data_centroid_activation(ghsom, dataset):
+    distances = list()
+
+    for idx, data in enumerate(dataset):
+        _neuron = ghsom
+        while _neuron.child_map is not None:
+            _gsom = _neuron.child_map
+            _neuron = _gsom.winner_neuron(data)
+        distances.append(_neuron.activation(data))
+
+    distances = np.asarray(a=distances, dtype=np.float32)
+    return distances.mean(), distances.std()
+
+
 if __name__ == '__main__':
     digits = load_digits()
 
@@ -85,11 +99,13 @@ if __name__ == '__main__':
     print("features per example: {}".format(n_features))
     print("number of digits: {}\n".format(n_digits))
 
-    ghsom = GHSOM(input_dataset=data, t1=0.25, t2=0.05, learning_rate=0.01, decay=0.9, gaussian_sigma=1)
+    ghsom = GHSOM(input_dataset=data, t1=0.2, t2=0.05, learning_rate=0.01, decay=0.7, gaussian_sigma=1.5)
 
     print("Training...")
     zero_unit = ghsom.train(epochs_number=30, dataset_percentage=0.25, min_dataset_size=70, seed=1, grow_maxiter=30)
+    print('')
 
     print(zero_unit)
     interactive_plot_with_labels(zero_unit.child_map, data, labels)
+    print(mean_data_centroid_activation(zero_unit, data))
 
