@@ -99,13 +99,13 @@ if __name__ == '__main__':
     print("features per example: {}".format(n_features))
     print("number of digits: {}\n".format(n_digits))
 
-    ghsom = GHSOM(input_dataset=data, t1=0.2, t2=0.05, learning_rate=0.01, decay=0.7, gaussian_sigma=1.5)
+    # t1=0.3, t2=0.003, learning_rate=0.15, decay=0.7, gaussian_sigma=1.5 => mean dist 2.89, std 1.66
+    ghsom = GHSOM(input_dataset=data, t1=0.3, t2=0.003, learning_rate=0.15, decay=0.7, gaussian_sigma=1.5)
 
     print("Training...")
-    zero_unit = ghsom.train(epochs_number=30, dataset_percentage=0.25, min_dataset_size=70, seed=1, grow_maxiter=30)
-    print('')
+    # epochs_number=30, dataset_percentage=0.30, min_dataset_size=30, seed=1, grow_maxiter=15
+    zero_unit = ghsom.train(epochs_number=30, dataset_percentage=0.30, min_dataset_size=30, seed=1, grow_maxiter=15)
 
     print(zero_unit)
     interactive_plot_with_labels(zero_unit.child_map, data, labels)
     print(mean_data_centroid_activation(zero_unit, data))
-
