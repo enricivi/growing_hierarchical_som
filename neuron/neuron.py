@@ -14,6 +14,9 @@ class Neuron:
         self.__weight_map = weight_map
         self.position = weight_vector_position
 
+        self.previous_count = 0
+        self.current_count = 0
+
         self.child_map = None
         self.input_dataset = self.__init_empty_dataset()
 
@@ -21,7 +24,8 @@ class Neuron:
         return np.linalg.norm(np.subtract(data, self.weight_vector()), axis=0)
 
     def needs_child_map(self):
-        return self.compute_quantization_error() >= (self.__t2 * self.__zero_quantization_error)
+        return (self.compute_quantization_error() >= (self.__t2 * self.__zero_quantization_error)) \
+               and (len(self.input_dataset) > 18)
 
     def compute_quantization_error(self):
         distance_from_whole_dataset = self.activation(self.input_dataset)
@@ -42,10 +46,16 @@ class Neuron:
         return len(self.input_dataset) != 0
 
     def append_data(self, data_item):
+        self.current_count += 1
         self.input_dataset = np.vstack((self.input_dataset, data_item))
 
     def clear_dataset(self):
+        self.previous_count = self.current_count
+        self.current_count = 0
         self.input_dataset = self.__init_empty_dataset()
+
+    def has_changed_from_previous_epoch(self):
+        return self.previous_count != self.current_count
 
     def __init_empty_dataset(self):
         input_dimension = self.__weight_map[0].shape[2]
