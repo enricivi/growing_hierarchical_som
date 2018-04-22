@@ -24,7 +24,7 @@ class Neuron:
         return np.linalg.norm(np.subtract(data, self.weight_vector()), axis=0)
 
     def needs_child_map(self):
-        return (self.compute_quantization_error() >= (self.__t2 * self.__zero_quantization_error)) \
+        return self.compute_quantization_error() >= (self.__t2 * self.__zero_quantization_error)
 
     def compute_quantization_error(self):
         distance_from_whole_dataset = self.activation(self.input_dataset)

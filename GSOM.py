@@ -1,6 +1,7 @@
 from math import ceil
 import numpy as np
 
+
 class GSOM:
     def __init__(self, initial_map_size, parent_quantization_error, t1, data_size, weights_map, parent_dataset, neuron_builder):
         assert parent_dataset is not None, "Provided dataset is empty"
@@ -73,12 +74,16 @@ class GSOM:
 
         MQE = 0.0
         mapped_neurons = 0
+        changed_neurons = 0
+
         for neuron in self.neurons.values():
             if neuron.has_dataset():
+                changed_neurons += 1 if neuron.has_changed_from_previous_epoch() else 0
                 MQE += neuron.compute_quantization_error()
                 mapped_neurons += 1
 
-        return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
+        return ((MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)) and \
+               (changed_neurons > int(np.ceil(mapped_neurons/5)))
 
     def __map_data_to_neurons(self):
         self.__clear_neurons_dataset()
