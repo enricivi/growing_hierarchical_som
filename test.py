@@ -127,10 +127,10 @@ if __name__ == '__main__':
     print("features per example: {}".format(n_features))
     print("number of digits: {}\n".format(n_digits))
 
-    ghsom = GHSOM(input_dataset=data, t1=0.2, t2=0.01, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
+    ghsom = GHSOM(input_dataset=data, t1=0.1, t2=0.01, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
 
     print("Training...")
-    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.75, min_dataset_size=30, seed=1, grow_maxiter=15)
+    zero_unit = ghsom.train(epochs_number=10, dataset_percentage=0.75, min_dataset_size=30, seed=1, grow_maxiter=10)
 
     print(zero_unit)
     interactive_plot_with_labels(zero_unit.child_map, data, labels)
