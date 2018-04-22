@@ -71,17 +71,14 @@ class GSOM:
     def __can_grow(self):
         self.__map_data_to_neurons()
 
-        has_changed = 0
-
         MQE = 0.0
         mapped_neurons = 0
         for neuron in self.neurons.values():
             if neuron.has_dataset():
-                has_changed += 1 if neuron.has_changed_from_previous_epoch() else 0
                 MQE += neuron.compute_quantization_error()
                 mapped_neurons += 1
 
-        return ((MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error))
+        return (MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)
 
     def __map_data_to_neurons(self):
         self.__clear_neurons_dataset()

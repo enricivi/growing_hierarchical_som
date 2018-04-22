@@ -25,7 +25,6 @@ class Neuron:
 
     def needs_child_map(self):
         return (self.compute_quantization_error() >= (self.__t2 * self.__zero_quantization_error)) \
-               and (len(self.input_dataset) > 18)
 
     def compute_quantization_error(self):
         distance_from_whole_dataset = self.activation(self.input_dataset)
