@@ -77,13 +77,13 @@ class GSOM:
         changed_neurons = 0
 
         for neuron in self.neurons.values():
+            changed_neurons += 1 if neuron.has_changed_from_previous_epoch() else 0
             if neuron.has_dataset():
-                changed_neurons += 1 if neuron.has_changed_from_previous_epoch() else 0
                 MQE += neuron.compute_quantization_error()
                 mapped_neurons += 1
 
         return ((MQE / mapped_neurons) >= (self.__t1 * self.__parent_quantization_error)) and \
-               (changed_neurons > int(np.ceil(mapped_neurons/5)))
+               (changed_neurons > int(np.round(mapped_neurons/5)))
 
     def __map_data_to_neurons(self):
         self.__clear_neurons_dataset()
