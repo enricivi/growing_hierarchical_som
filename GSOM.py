@@ -18,6 +18,9 @@ class GSOM:
         self.neurons = self.__build_neurons_list()
 
     def winner_neuron(self, data):
+        #diff = self.weights_map[0] - data
+
+        # old version
         activations = list()
         for neuron in self.neurons.values():
             activations.append(neuron.activation(data))

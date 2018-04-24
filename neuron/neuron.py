@@ -21,7 +21,14 @@ class Neuron:
         self.input_dataset = self.__init_empty_dataset()
 
     def activation(self, data):
-        return np.linalg.norm(np.subtract(data, self.weight_vector()), axis=0)
+        # TODO: axis=0 credo sia sbagliato
+        # return np.linalg.norm(np.subtract(data, self.weight_vector()), axis=0)
+        activation = 0
+        if len(data.shape) == 1:
+            activation = np.linalg.norm(np.subtract(data, self.weight_vector()))
+        else:
+            activation = np.linalg.norm(np.subtract(data, self.weight_vector()), axis=1)
+        return activation
 
     def needs_child_map(self):
         return self.compute_quantization_error() >= (self.__t2 * self.__zero_quantization_error)
