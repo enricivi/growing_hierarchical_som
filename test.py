@@ -138,7 +138,7 @@ if __name__ == '__main__':
     ghsom = GHSOM(input_dataset=data, t1=0.25, t2=0.01, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
 
     print("Training...")
-    zero_unit = ghsom.train(epochs_number=10, dataset_percentage=0.50, min_dataset_size=30, seed=0, grow_maxiter=10)
+    zero_unit = ghsom.train(epochs_number=10, dataset_percentage=0.30, min_dataset_size=30, seed=0, grow_maxiter=10)
 
     print(zero_unit)
     print(mean_data_centroid_activation(zero_unit, data))
