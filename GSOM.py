@@ -18,14 +18,8 @@ class GSOM:
         self.neurons = self.__build_neurons_list()
 
     def winner_neuron(self, data):
-        #diff = self.weights_map[0] - data
-
-        # old version
-        activations = list()
-        for neuron in self.neurons.values():
-            activations.append(neuron.activation(data))
-
-        idx = np.unravel_index(np.argmin(activations), dims=self.map_shape())
+        distances = np.linalg.norm((self.weights_map[0] - data), ord=2, axis=2)
+        idx = np.unravel_index(distances.argmin(), dims=self.map_shape())
         return self.neurons[idx]
 
     def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay,
