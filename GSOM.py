@@ -18,19 +18,45 @@ class GSOM:
         self.neurons = self.__build_neurons_list()
 
     def winner_neuron(self, data):
-        distances = np.linalg.norm((self.weights_map[0] - data), ord=2, axis=2)
-        idx = np.unravel_index(distances.argmin(), dims=self.map_shape())
-        return self.neurons[idx]
+        number_of_data = 1 if (len(data.shape) == 1) else data.shape[0]
+        distances = np.empty(shape=(number_of_data, len(self.neurons.values())))
+
+        neurons_list = list(self.neurons.values())
+        for idx, neuron in enumerate(neurons_list):
+            distances[:, idx] = neuron.activation(data)
+
+        winner_neuron_per_data = distances.argmin(axis=1)
+        winner_neurons = [neurons_list[idx] for idx in winner_neuron_per_data]
+
+        """ test
+        if number_of_data == 1:
+            _distances = np.linalg.norm((self.weights_map[0] - data), ord=2, axis=2)
+            idx = np.unravel_index(_distances.argmin(), dims=self.map_shape())
+            if idx != winner_neurons[0].position:
+                print('\n', idx, winner_neurons[0].position, '\n', _distances[idx], distances[0, winner_neuron_per_data[0]], '\n', _distances, distances)
+        else:
+            for i, _data in enumerate(data):
+                _distances = np.linalg.norm((self.weights_map[0] - _data), ord=2, axis=2)
+                idx = np.unravel_index(_distances.argmin(), dims=self.map_shape())
+                if idx != winner_neurons[i].position:
+                    print('\n', idx, winner_neurons[0].position, '\n', _distances[idx],
+                          distances[0, winner_neuron_per_data[0]], '\n', _distances, distances)
+        """
+        return winner_neurons
+        # old
+        # distances = np.linalg.norm((self.weights_map[0] - data), ord=2, axis=2)
+        # idx = np.unravel_index(distances.argmin(), dims=self.map_shape())
+        # return self.neurons[idx]
 
     def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay,
               dataset_percentage, min_dataset_size, seed, maxiter):
-        iter = 0
+        _iter = 0
         can_grow = True
-        while can_grow and (iter < maxiter):
+        while can_grow and (_iter < maxiter):
             self.__neurons_training(decay, epochs, initial_learning_rate, initial_gaussian_sigma,
                                     dataset_percentage, min_dataset_size, seed)
 
-            iter += 1
+            _iter += 1
             can_grow = self.__can_grow()
             if can_grow:
                 self.grow()
@@ -49,7 +75,7 @@ class GSOM:
             s *= decay
 
     def __update_neurons(self, data, learning_rate, sigma):
-        gauss_kernel = self.__gaussian_kernel(self.winner_neuron(data), sigma)
+        gauss_kernel = self.__gaussian_kernel(self.winner_neuron(data)[0], sigma)
 
         for neuron in self.neurons.values():
             weight = neuron.weight_vector()
@@ -86,9 +112,12 @@ class GSOM:
         self.__clear_neurons_dataset()
 
         # finding the new association for each neuron
-        for data in self.__parent_dataset:
-            winner = self.winner_neuron(data)
-            winner.append_data(data)
+        winner_neurons = self.winner_neuron(self.__parent_dataset)
+        for neuron, data in zip(winner_neurons, self.__parent_dataset):
+            neuron.append_data(data)
+        # for data in self.__parent_dataset:
+        #     winner = self.winner_neuron(data)
+        #     winner.append_data(data)
 
     def __clear_neurons_dataset(self):
         for neuron in self.neurons.values():
