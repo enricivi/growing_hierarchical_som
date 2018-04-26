@@ -21,13 +21,11 @@ class Neuron:
         self.input_dataset = self.__init_empty_dataset()
 
     def activation(self, data):
-        # TODO: axis=0 credo sia sbagliato
-        # return np.linalg.norm(np.subtract(data, self.weight_vector()), axis=0)
         activation = 0
-        if len(data.shape) == 1:
-            activation = np.linalg.norm(np.subtract(data, self.weight_vector()))
+        if len(data.shape) == 1:  # if data is a vector
+            activation = np.linalg.norm(np.subtract(data, self.weight_vector()), ord=2)
         else:
-            activation = np.linalg.norm(np.subtract(data, self.weight_vector()), axis=1)
+            activation = np.linalg.norm(np.subtract(data, self.weight_vector()), ord=2, axis=1)
         return activation
 
     def needs_child_map(self):
