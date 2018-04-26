@@ -1,28 +1,25 @@
 import numpy as np
 from sklearn.datasets import load_digits
-from sklearn.datasets import fetch_mldata
 from collections import OrderedDict
 from GHSOM import GHSOM
 from matplotlib import pyplot as plt
 
-data_shape = 28
-
 
 def __gmap_to_matrix(gmap):
     gmap = gmap[0]
-    map_row = data_shape * gmap.shape[0]
-    map_col = data_shape * gmap.shape[1]
+    map_row = 8 * gmap.shape[0]
+    map_col = 8 * gmap.shape[1]
     _image = np.empty(shape=(map_row, map_col), dtype=np.float32)
-    for i in range(0, map_row, data_shape):
-        for j in range(0, map_col, data_shape):
-            neuron = gmap[i // data_shape, j // data_shape]
-            _image[i:(i + data_shape), j:(j + data_shape)] = np.reshape(neuron, newshape=(data_shape, data_shape))
+    for i in range(0, map_row, 8):
+        for j in range(0, map_col, 8):
+            neuron = gmap[i // 8, j // 8]
+            _image[i:(i + 8), j:(j + 8)] = np.reshape(neuron, newshape=(8, 8))
     return _image
 
 
 def __plot_child(e, gmap, level):
     if e.inaxes is not None:
-        coords = (int(e.ydata // data_shape), int(e.xdata // data_shape))
+        coords = (int(e.ydata // 8), int(e.xdata // 8))
         neuron = gmap.neurons[coords]
         if neuron.child_map is not None:
             interactive_plot(neuron.child_map, num=str(coords), level=level+1)
@@ -39,7 +36,7 @@ def interactive_plot(gmap, num='root', level=1):
 
 def __plot_child_with_labels(e, gmap, level, data, labels, associations):
     if e.inaxes is not None:
-        coords = (int(e.ydata // data_shape), int(e.xdata // data_shape))
+        coords = (int(e.ydata // 8), int(e.xdata // 8))
         neuron = gmap.neurons[coords]
         if neuron.child_map is not None:
             assc = associations[coords[0]][coords[1]]
@@ -63,11 +60,11 @@ def interactive_plot_with_labels(gmap, dataset, labels, num='root', level=1):
     plt.axis('off')
 
     for idx, label in enumerate(labels):
-        winner_neuron = gmap.winner_neuron(dataset[idx])
+        winner_neuron = gmap.winner_neuron(dataset[idx])[0]
         r, c = winner_neuron.position
         mapping[r][c].append(idx)
 
-        ax.plot(c*data_shape+data_shape/2, r*data_shape+data_shape/2, markers[label], markerfacecolor='None', markeredgecolor=colors[label],
+        ax.plot(c*8+4, r*8+4, markers[label], markerfacecolor='None', markeredgecolor=colors[label],
                 markersize=m_size, markeredgewidth=m_width, label=label)
     legend_handles, legend_labels = plt.gca().get_legend_handles_labels()
     by_label = OrderedDict(zip(legend_labels, legend_handles))
@@ -83,7 +80,7 @@ def mean_data_centroid_activation(ghsom, dataset):
         _neuron = ghsom
         while _neuron.child_map is not None:
             _gsom = _neuron.child_map
-            _neuron = _gsom.winner_neuron(data)
+            _neuron = _gsom.winner_neuron(data)[0]
         distances.append(_neuron.activation(data))
 
     distances = np.asarray(a=distances, dtype=np.float32)
@@ -107,7 +104,7 @@ def dispersion_rate(ghsom, dataset):
         _neuron = ghsom
         while _neuron.child_map is not None:
             _gsom = _neuron.child_map
-            _neuron = _gsom.winner_neuron(data)
+            _neuron = _gsom.winner_neuron(data)[0]
 
             gsom_reference = str(_gsom)
             neuron_reference = str(_neuron)
@@ -119,28 +116,22 @@ def dispersion_rate(ghsom, dataset):
 
 
 if __name__ == '__main__':
-    # digits = load_digits()
-    #
-    # data = digits.data
-    # n_samples, n_features = data.shape
-    # n_digits = len(np.unique(digits.target))
-    # labels = digits.target
+    digits = load_digits()
 
-    mnist = fetch_mldata('MNIST original')
-    data = mnist.data
+    data = digits.data
     n_samples, n_features = data.shape
-    n_digits = len(np.unique(mnist.target))
-    labels = mnist.target
+    n_digits = len(np.unique(digits.target))
+    labels = digits.target
 
     print("dataset length: {}".format(n_samples))
     print("features per example: {}".format(n_features))
     print("number of digits: {}\n".format(n_digits))
-    ghsom = GHSOM(input_dataset=data, t1=0.25, t2=0.01, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
+    ghsom = GHSOM(input_dataset=data, t1=0.1, t2=0.0001, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
 
     print("Training...")
-    zero_unit = ghsom.train(epochs_number=10, dataset_percentage=0.30, min_dataset_size=30, seed=0, grow_maxiter=10)
+    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.50, min_dataset_size=30, seed=0, grow_maxiter=10)
 
     print(zero_unit)
+    interactive_plot_with_labels(zero_unit.child_map, data, labels)
     print(mean_data_centroid_activation(zero_unit, data))
     print(dispersion_rate(zero_unit, data))
-    interactive_plot_with_labels(zero_unit.child_map, data, labels)

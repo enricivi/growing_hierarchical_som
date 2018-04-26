@@ -55,8 +55,6 @@ class GHSOM:
                 gmap = gmaps[neuron].get()
                 neuron.child_map = gmap
                 neurons_to_expand = filter(lambda _neuron: _neuron.needs_child_map(), gmap.neurons.values())
-                # neurons_to_expand = [_neuron for _neuron in gmap.neurons.values() if (_neuron.needs_child_map() and
-                # len(_neuron.input_dataset) > min_dataset_size)]
                 for _neuron in neurons_to_expand:
                     _neuron.child_map = self.__build_new_GSOM(
                         _neuron.compute_quantization_error(),
