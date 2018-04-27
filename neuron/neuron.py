@@ -49,9 +49,9 @@ class Neuron:
     def has_dataset(self):
         return len(self.input_dataset) != 0
 
-    def append_data(self, data_item):
-        self.current_count += 1
-        self.input_dataset = np.vstack((self.input_dataset, data_item))
+    def replace_dataset(self, data_item):
+        self.current_count = len(data_item)
+        self.input_dataset = data_item
 
     def clear_dataset(self):
         self.previous_count = self.current_count

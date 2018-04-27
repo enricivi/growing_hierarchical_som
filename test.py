@@ -63,7 +63,7 @@ def interactive_plot_with_labels(gmap, dataset, labels, num='root', level=1):
     plt.axis('off')
 
     for idx, label in enumerate(labels):
-        winner_neuron = gmap.winner_neuron(dataset[idx])[0]
+        winner_neuron = gmap.winner_neuron(dataset[idx])[0][0]
         r, c = winner_neuron.position
         mapping[r][c].append(idx)
 
@@ -83,7 +83,7 @@ def mean_data_centroid_activation(ghsom, dataset):
         _neuron = ghsom
         while _neuron.child_map is not None:
             _gsom = _neuron.child_map
-            _neuron = _gsom.winner_neuron(data)[0]
+            _neuron = _gsom.winner_neuron(data)[0][0]
         distances.append(_neuron.activation(data))
 
     distances = np.asarray(a=distances, dtype=np.float32)
@@ -107,7 +107,7 @@ def dispersion_rate(ghsom, dataset):
         _neuron = ghsom
         while _neuron.child_map is not None:
             _gsom = _neuron.child_map
-            _neuron = _gsom.winner_neuron(data)[0]
+            _neuron = _gsom.winner_neuron(data)[0][0]
 
             gsom_reference = str(_gsom)
             neuron_reference = str(_neuron)
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     ghsom = GHSOM(input_dataset=data, t1=0.1, t2=0.0001, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
 
     print("Training...")
-    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.50, min_dataset_size=30, seed=0, grow_maxiter=10)
+    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.05, min_dataset_size=30, seed=0, grow_maxiter=10)
 
     print(zero_unit)
     interactive_plot_with_labels(zero_unit.child_map, data, labels)

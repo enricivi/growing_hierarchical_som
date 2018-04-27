@@ -26,6 +26,10 @@ class GSOM:
             distances[:, idx] = neuron.activation(data)
 
         winner_neuron_per_data = distances.argmin(axis=1)
+
+        support_stuff = [[position for position in np.where(winner_neuron_per_data == neuron_idx)[0]]
+                         for neuron_idx in range(len(neurons_list))]
+
         winner_neurons = [neurons_list[idx] for idx in winner_neuron_per_data]
 
         """ test
@@ -42,7 +46,7 @@ class GSOM:
                     print('\n', idx, winner_neurons[0].position, '\n', _distances[idx],
                           distances[0, winner_neuron_per_data[0]], '\n', _distances, distances)
         """
-        return winner_neurons
+        return winner_neurons, support_stuff
         # old
         # distances = np.linalg.norm((self.weights_map[0] - data), ord=2, axis=2)
         # idx = np.unravel_index(distances.argmin(), dims=self.map_shape())
@@ -61,7 +65,8 @@ class GSOM:
             if can_grow:
                 self.grow()
 
-        self.__map_data_to_neurons()
+        if can_grow:
+            self.__map_data_to_neurons()
         return self
 
     def __neurons_training(self, decay, epochs, learning_rate, sigma, dataset_percentage, min_dataset_size, seed):
@@ -75,7 +80,7 @@ class GSOM:
             s *= decay
 
     def __update_neurons(self, data, learning_rate, sigma):
-        gauss_kernel = self.__gaussian_kernel(self.winner_neuron(data)[0], sigma)
+        gauss_kernel = self.__gaussian_kernel(self.winner_neuron(data)[0][0], sigma)
 
         for neuron in self.neurons.values():
             weight = neuron.weight_vector()
@@ -112,9 +117,11 @@ class GSOM:
         self.__clear_neurons_dataset()
 
         # finding the new association for each neuron
-        winner_neurons = self.winner_neuron(self.__parent_dataset)
-        for neuron, data in zip(winner_neurons, self.__parent_dataset):
-            neuron.append_data(data)
+        _, support_stuff = self.winner_neuron(self.__parent_dataset)
+
+        neurons = list(self.neurons.values())
+        for idx, data_idxs in enumerate(support_stuff):
+            neurons[idx].replace_dataset(self.__parent_dataset[data_idxs, :])
         # for data in self.__parent_dataset:
         #     winner = self.winner_neuron(data)
         #     winner.append_data(data)
@@ -124,7 +131,7 @@ class GSOM:
             neuron.clear_dataset()
 
     def __find_error_neuron(self,):
-        self.__map_data_to_neurons()
+        # self.__map_data_to_neurons()
 
         quantization_errors = list()
         for neuron in self.neurons.values():
