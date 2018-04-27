@@ -92,8 +92,8 @@ class GSOM:
         winner_row, winner_col = winner_neuron.position
         s = 2 * (gaussian_sigma ** 2)
 
-        gauss_col = np.power(np.asarray(range(self.map_shape()[1])) - winner_col, 2) / s
-        gauss_row = np.power(np.asarray(range(self.map_shape()[0])) - winner_row, 2) / s
+        gauss_col = np.power(np.arange(self.map_shape()[1]) - winner_col, 2) / s
+        gauss_row = np.power(np.arange(self.map_shape()[0]) - winner_row, 2) / s
 
         return np.outer(np.exp(-1 * gauss_row), np.exp(-1 * gauss_col))
 

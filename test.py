@@ -5,7 +5,7 @@ from collections import OrderedDict
 from GHSOM import GHSOM
 from matplotlib import pyplot as plt
 
-data_shape = 28
+data_shape = 8
 
 
 def __gmap_to_matrix(gmap):
@@ -119,18 +119,18 @@ def dispersion_rate(ghsom, dataset):
 
 
 if __name__ == '__main__':
-    # digits = load_digits()
-    #
-    # data = digits.data
-    # n_samples, n_features = data.shape
-    # n_digits = len(np.unique(digits.target))
-    # labels = digits.target
+    digits = load_digits()
 
-    mnist = fetch_mldata('MNIST original')
-    data = mnist.data
+    data = digits.data
     n_samples, n_features = data.shape
-    n_digits = len(np.unique(mnist.target))
-    labels = mnist.target
+    n_digits = len(np.unique(digits.target))
+    labels = digits.target
+
+    # mnist = fetch_mldata('MNIST original')
+    # data = mnist.data
+    # n_samples, n_features = data.shape
+    # n_digits = len(np.unique(mnist.target))
+    # labels = mnist.target
 
     print("dataset length: {}".format(n_samples))
     print("features per example: {}".format(n_features))
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     ghsom = GHSOM(input_dataset=data, t1=0.1, t2=0.0001, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
 
     print("Training...")
-    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.05, min_dataset_size=30, seed=0, grow_maxiter=10)
+    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.50, min_dataset_size=30, seed=0, grow_maxiter=10)
 
     print(zero_unit)
     interactive_plot_with_labels(zero_unit.child_map, data, labels)
