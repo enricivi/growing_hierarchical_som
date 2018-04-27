@@ -34,6 +34,7 @@ class GHSOM:
             progressbar.Bar(),
             ' (', progressbar.Counter(format='%(value)02d/%(max_value)d'), ') ',
         ])
+        bar.update(0)
         while not neuron_queue.empty():
             size = min(neuron_queue.qsize(), pool._processes)
             gmaps = dict()
