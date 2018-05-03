@@ -48,10 +48,9 @@ def __plot_child_with_labels(e, gmap, level, data, labels, associations):
 
 
 def interactive_plot_with_labels(gmap, dataset, labels, num='root', level=1):
-    markers = ['o', 'v', '1', '3', '8', 's', 'p', 'x', '+', '*']
-    colors = ["r", "g", "b", "y", "c", (0, 0.1, 0.8), (1, 0.5, 0), (1, 1, 0.3), "m", (0.4, 0.6, 0)]
-    m_size = ((50 / gmap.map_shape()[0]) + (50 / gmap.map_shape()[1]))*0.5
-    m_width = ((10 / gmap.map_shape()[0]) + (10 / gmap.map_shape()[1]))*0.5
+    colors = ["#E52B50", "#FFBF00", "#4B0082", "#FBCEB1", "#7FFFD4",
+              "#007FFF", "#00FF00", "#9966CC", "#CD7F32", "#89CFF0"]
+    sizes = np.arange(0, 60, 6) + 0.5
 
     mapping = [[list() for _ in range(gmap.map_shape()[1])] for _ in range(gmap.map_shape()[0])]
 
@@ -67,12 +66,12 @@ def interactive_plot_with_labels(gmap, dataset, labels, num='root', level=1):
         r, c = winner_neuron.position
         mapping[r][c].append(idx)
 
-        ax.plot(c*data_shape+data_shape/2, r*data_shape+data_shape/2, markers[label], markerfacecolor='None', markeredgecolor=colors[label],
-                markersize=m_size, markeredgewidth=m_width, label=label)
+        ax.plot(c*data_shape+data_shape/2, r*data_shape+data_shape/2, 'o', markerfacecolor='None',
+                markeredgecolor=colors[label], markersize=sizes[label], markeredgewidth=1.5, label=label)
     legend_handles, legend_labels = plt.gca().get_legend_handles_labels()
     by_label = OrderedDict(zip(legend_labels, legend_handles))
-    plt.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(0., 1.02, 1., .102), ncol=5,
-               loc=3, borderaxespad=0., mode="expand")
+    plt.legend(by_label.values(), by_label.keys(), loc='center left', bbox_to_anchor=(1.1, 0.5), borderaxespad=0.,
+               mode='expand', labelspacing=int((gmap.map_shape()[0]/9)*data_shape))
     fig.show()
 
 
