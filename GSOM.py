@@ -32,25 +32,7 @@ class GSOM:
 
         winner_neurons = [neurons_list[idx] for idx in winner_neuron_per_data]
 
-        """ test
-        if number_of_data == 1:
-            _distances = np.linalg.norm((self.weights_map[0] - data), ord=2, axis=2)
-            idx = np.unravel_index(_distances.argmin(), dims=self.map_shape())
-            if idx != winner_neurons[0].position:
-                print('\n', idx, winner_neurons[0].position, '\n', _distances[idx], distances[0, winner_neuron_per_data[0]], '\n', _distances, distances)
-        else:
-            for i, _data in enumerate(data):
-                _distances = np.linalg.norm((self.weights_map[0] - _data), ord=2, axis=2)
-                idx = np.unravel_index(_distances.argmin(), dims=self.map_shape())
-                if idx != winner_neurons[i].position:
-                    print('\n', idx, winner_neurons[0].position, '\n', _distances[idx],
-                          distances[0, winner_neuron_per_data[0]], '\n', _distances, distances)
-        """
         return winner_neurons, support_stuff
-        # old
-        # distances = np.linalg.norm((self.weights_map[0] - data), ord=2, axis=2)
-        # idx = np.unravel_index(distances.argmin(), dims=self.map_shape())
-        # return self.neurons[idx]
 
     def train(self, epochs, initial_gaussian_sigma, initial_learning_rate, decay,
               dataset_percentage, min_dataset_size, seed, maxiter):
@@ -122,9 +104,6 @@ class GSOM:
         neurons = list(self.neurons.values())
         for idx, data_idxs in enumerate(support_stuff):
             neurons[idx].replace_dataset(self.__parent_dataset[data_idxs, :])
-        # for data in self.__parent_dataset:
-        #     winner = self.winner_neuron(data)
-        #     winner.append_data(data)
 
     def __clear_neurons_dataset(self):
         for neuron in self.neurons.values():

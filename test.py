@@ -140,6 +140,7 @@ if __name__ == '__main__':
     zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.50, min_dataset_size=30, seed=0, grow_maxiter=10)
 
     print(zero_unit)
-    interactive_plot_with_labels(zero_unit.child_map, data, labels)
     print(mean_data_centroid_activation(zero_unit, data))
     print(dispersion_rate(zero_unit, data))
+    interactive_plot_with_labels(zero_unit.child_map, data, labels)
+    plt.show()
