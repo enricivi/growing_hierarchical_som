@@ -42,6 +42,7 @@ class GSOM:
             self.__neurons_training(decay, epochs, initial_learning_rate, initial_gaussian_sigma,
                                     dataset_percentage, min_dataset_size, seed)
 
+            seed += epochs + 1
             _iter += 1
             can_grow = self.__can_grow()
             if can_grow:
@@ -57,7 +58,7 @@ class GSOM:
         for iteration in range(epochs):
             for data in self.__training_data(seed, dataset_percentage, min_dataset_size):
                 self.__update_neurons(data, lr, s)
-
+            seed += 1
             lr *= decay
             s *= decay
 

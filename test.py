@@ -5,7 +5,7 @@ from collections import OrderedDict
 from GHSOM import GHSOM
 from matplotlib import pyplot as plt
 
-data_shape = 8
+data_shape = 28
 
 
 def __gmap_to_matrix(gmap):
@@ -117,19 +117,49 @@ def dispersion_rate(ghsom, dataset):
     return __number_of_neurons(ghsom) / used_neurons
 
 
+def depth(map, init):
+    depths = [init]
+    for neuron in map.neurons.values():
+        if neuron.child_map is not None:
+            depths.append(depth(neuron.child_map, init + 1))
+    return max(depths)
+
+
+def maxSize(map):
+    sizes = [len(map.neurons)]
+    for neuron in map.neurons.values():
+        if neuron.child_map is not None:
+            sizes.append(maxSize(neuron.child_map))
+
+    return max(sizes)
+
+
+def sizes(map):
+    s = [map.weights_map[0].shape]
+    for neuron in map.neurons.values():
+        if neuron.child_map is not None:
+            s.extend(sizes(neuron.child_map))
+
+    return s
+
+
+def meanSize(map):
+    return np.asarray(sizes(map)).mean(axis=0)
+
+
 if __name__ == '__main__':
-    digits = load_digits()
-
-    data = digits.data
-    n_samples, n_features = data.shape
-    n_digits = len(np.unique(digits.target))
-    labels = digits.target
-
-    # mnist = fetch_mldata('MNIST original')
-    # data = mnist.data
+    # digits = load_digits()
+    #
+    # data = digits.data
     # n_samples, n_features = data.shape
-    # n_digits = len(np.unique(mnist.target))
-    # labels = mnist.target
+    # n_digits = len(np.unique(digits.target))
+    # labels = digits.target
+
+    mnist = fetch_mldata('MNIST original')
+    data = mnist.data
+    n_samples, n_features = data.shape
+    n_digits = len(np.unique(mnist.target))
+    labels = mnist.target
 
     print("dataset length: {}".format(n_samples))
     print("features per example: {}".format(n_features))
@@ -137,10 +167,10 @@ if __name__ == '__main__':
     ghsom = GHSOM(input_dataset=data, t1=0.1, t2=0.0001, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
 
     print("Training...")
-    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.50, min_dataset_size=30, seed=0, grow_maxiter=10)
+    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.30, min_dataset_size=30, seed=0, grow_maxiter=10)
 
-    print(zero_unit)
-    print(mean_data_centroid_activation(zero_unit, data))
-    print(dispersion_rate(zero_unit, data))
-    interactive_plot_with_labels(zero_unit.child_map, data, labels)
-    plt.show()
+    # print(zero_unit)
+    # print(mean_data_centroid_activation(zero_unit, data))
+    # print(dispersion_rate(zero_unit, data))
+    # interactive_plot_with_labels(zero_unit.child_map, data, labels)
+    # plt.show()
