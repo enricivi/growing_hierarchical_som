@@ -13,10 +13,11 @@ In order to overcome these two major issues, a derived method has been proposed,
 |:-------------------------------------------------------------------------------------------------:|
 | <img src="images_readme/ghsom_example.png" height="400" alt="An example of the GHSOM structure"/> |
 
-## GHSOM training steps
+### GHSOM training steps
 The training phase of GHSOM is made by two steps:
 * The initialization step in which the zero unit and its child map are created
 * The tree training.
+
 This last sptep can be further expanded into:
 * GSOM map training
 * GSOM growing
@@ -26,7 +27,10 @@ This three sub-steps are repeated until a stop criterion is satisfied.
 
 _**A detailed explanation of the training process can be found on the reference paper. Furthermore, it is important to highlight that our implementation is not 100% equal to the paper theory**_
 
-## Requirements
+## Run the script
+It is possible to run a demo of our implementation simply writing **`python3 test.py`** in your terminal
+
+### Requirements
 | Software  | Version | Necessary |
 |:--------------------------------------------------------------:|:-------:|:--------------------------------:|
 | [Python](https://www.python.org/downloads/)                    | 3.6.5   | Yes                              |
@@ -35,10 +39,7 @@ _**A detailed explanation of the training process can be found on the reference 
 | [matplotlib](https://matplotlib.org/)                          | 2.2.2   | No (used in test.py for dataset) |                 
 | [scikit-learn](http://scikit-learn.org/stable/)                | 0.19.1  | No (used in test.py for dataset) |
 
-## Run the script
-It is possible to run a demo of our implementation simply writing **`python3 test.py`** in your terminal
-
-## Some results
+### Some results
 | Example branch showing how GHSOM increases details as depth grows |                                                          
 |:-------------------------------------------------------------------------------------------------:|
 | <img src="images_readme/mnist_depth.png" alt="branch showing how GHSOM increases details as depth grows"/> |
