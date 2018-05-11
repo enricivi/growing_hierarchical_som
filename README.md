@@ -7,7 +7,7 @@ On the other hand SOM shows some limitations:
 * The fixed size constraints how the data is being mapped; therefore, without prior knowledge, it can be difficult to determine the network architecture providing the most satisfying results.
 * Hierarchical relationships are not easily recognizable, since all the data is mapped in the same two-dimensional space.
 
-In order to overcome these two major issues, a derived method has been proposed, the **Growing Hierarchical SOM**: Growing SOM (SOM-like structure capable of expand his map) are spawned and used as vertices of a dynamic tree in order to allow both vertical and horizontal growing of the GHSOM.
+In order to overcome these two major issues, a derived method has been proposed, the **Growing Hierarchical SOM**: `Growing SOM (SOM-like structure capable of expand his map) are spawned and used as vertices of a dynamic tree in order to allow both vertical and horizontal growing of the GHSOM.`
 
 | An example of the GHSOM structure                                                                 |
 |:-------------------------------------------------------------------------------------------------:|
