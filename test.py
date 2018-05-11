@@ -5,7 +5,7 @@ from collections import OrderedDict
 from GHSOM import GHSOM
 from matplotlib import pyplot as plt
 
-data_shape = 28
+data_shape = 8
 
 
 def __gmap_to_matrix(gmap):
@@ -125,14 +125,18 @@ def depth(map, init):
     return max(depths)
 
 
-def maxSize(map):
-    sizes = [len(map.neurons)]
+def _maxSize(map):
+    sizes = {len(map.neurons): map.weights_map[0].shape}
     for neuron in map.neurons.values():
         if neuron.child_map is not None:
-            sizes.append(maxSize(neuron.child_map))
+            sizes.update(_maxSize(neuron.child_map))
 
-    return max(sizes)
+    return sizes
 
+def maxSize(map):
+    sizes = _maxSize(map)
+    size = max(sizes.keys())
+    return (size, sizes[size])
 
 def sizes(map):
     s = [map.weights_map[0].shape]
@@ -148,27 +152,31 @@ def meanSize(map):
 
 
 if __name__ == '__main__':
-    # digits = load_digits()
-    #
-    # data = digits.data
-    # n_samples, n_features = data.shape
-    # n_digits = len(np.unique(digits.target))
-    # labels = digits.target
+    digits = load_digits()
 
-    mnist = fetch_mldata('MNIST original')
-    data = mnist.data
+    data = digits.data
     n_samples, n_features = data.shape
-    n_digits = len(np.unique(mnist.target))
-    labels = mnist.target
+    n_digits = len(np.unique(digits.target))
+    labels = digits.target
+
+    # mnist = fetch_mldata('MNIST original')
+    # data = mnist.data
+    # n_samples, n_features = data.shape
+    # n_digits = len(np.unique(mnist.target))
+    # labels = mnist.target.astype(int)
 
     print("dataset length: {}".format(n_samples))
     print("features per example: {}".format(n_features))
     print("number of digits: {}\n".format(n_digits))
-    ghsom = GHSOM(input_dataset=data, t1=0.1, t2=0.0001, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
+    ghsom = GHSOM(input_dataset=data, t1=0.01, t2=0.0001, learning_rate=0.15, decay=0.95, gaussian_sigma=1.5)
 
     print("Training...")
-    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.30, min_dataset_size=30, seed=0, grow_maxiter=10)
+    zero_unit = ghsom.train(epochs_number=15, dataset_percentage=0.30, min_dataset_size=30, seed=0, grow_maxiter=np.inf)
 
+    print(depth(zero_unit.child_map, 0))
+    print(meanSize(zero_unit.child_map))
+    print(maxSize(zero_unit.child_map))
+    #interactive_plot(zero_unit.child_map, data)
     # print(zero_unit)
     # print(mean_data_centroid_activation(zero_unit, data))
     # print(dispersion_rate(zero_unit, data))
