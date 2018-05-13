@@ -65,7 +65,7 @@ class Neuron:
         input_dimension = self.__weight_map[0].shape[2]
         return np.empty(shape=(0, input_dimension), dtype=np.float32)
 
-    def __repr__(self, level=0):
+    def __str__(self, level=0):
         gap = '\t'*level
         _printable = "{}position {} -- map dimensions {} -- input dataset {} element(s) -- level {} \n".format(
             gap,
@@ -77,5 +77,5 @@ class Neuron:
 
         if self.child_map is not None:
             for neuron in self.child_map.neurons.values():
-                _printable += neuron.__repr__(level+1)
+                _printable += neuron.__str__(level+1)
         return _printable
