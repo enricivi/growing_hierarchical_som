@@ -1,6 +1,7 @@
+# %%
 import numpy as np
 from sklearn.datasets import load_digits
-from sklearn.datasets import fetch_mldata
+# from sklearn.datasets import fetch_mldata
 from collections import OrderedDict
 from GHSOM import GHSOM
 from matplotlib import pyplot as plt
@@ -144,3 +145,5 @@ if __name__ == '__main__':
     print(dispersion_rate(zero_unit, data))
     interactive_plot_with_labels(zero_unit.child_map, data, labels)
     plt.show()
+
+# %%

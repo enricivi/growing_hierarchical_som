@@ -54,7 +54,7 @@ class GSOM:
     def __neurons_training(self, decay, epochs, learning_rate, sigma, dataset_percentage, min_dataset_size, seed):
         lr = learning_rate
         s = sigma
-        for iteration in range(epochs):
+        for _ in range(epochs):
             for data in self.__training_data(seed, dataset_percentage, min_dataset_size):
                 self.__update_neurons(data, lr, s)
 
@@ -119,7 +119,7 @@ class GSOM:
                 quantization_error = neuron.compute_quantization_error()
             quantization_errors.append(quantization_error)
 
-        idx = np.unravel_index(np.argmax(quantization_errors), dims=self.map_shape())
+        idx = np.unravel_index(np.argmax(quantization_errors), shape=self.map_shape())
         return self.neurons[idx]
 
     def __find_most_dissimilar_neuron(self, error_neuron):
